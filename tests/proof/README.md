@@ -34,6 +34,8 @@ Media checks use FFprobe JSON plus decoded RGB24 frames. They assert:
   uses the documented output name/default dimensions/rate, and animates;
 - H.264/yuv420p MP4 and animated GIF codec, pixel format, size, rate,
   duration, and frame count;
+- a lossless PNG signature, odd-dimension support, and exact `--at 0.5`
+  snapshot fidelity against the mapless golden frame;
 - exact first/middle/last decoded-frame identity for `.tif` and `.tiff` map
   aliases;
 - visible first-to-last animation;

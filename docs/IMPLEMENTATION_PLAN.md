@@ -25,9 +25,9 @@ The product command is:
 alog2media INPUT.alog [OPTIONS]
 ```
 
-It emits an MP4 or animated GIF containing only the pMarineViewer navigation
-viewport. It does not require screen recording, user interaction, a visible
-window, `DISPLAY`, or `WAYLAND_DISPLAY`.
+It emits an MP4, animated GIF, or lossless single-frame PNG containing only
+the pMarineViewer navigation viewport. It does not require screen recording,
+user interaction, a visible window, `DISPLAY`, or `WAYLAND_DISPLAY`.
 
 The `.alog` is the first positional argument so humans, scripts, and a future
 demo skill can use the same command. `alog2media -h` is the complete option
@@ -84,12 +84,16 @@ The principal scene options are:
 --geometry auto|on|off     Follow mission config or override logged geometry.
 ```
 
+PNG uses `--at SECONDS` to select one exact log time. Video interval and rate
+options are rejected for PNG so unused settings cannot silently change user
+expectations.
+
 The existing timing and encoding options include output, size, FPS, start,
 end, duration, warp, force, verbose, help, and version. `.tif` and `.tiff` are
 both accepted and require a same-basename `.info` file. MP4 uses
-H.264/yuv420p; GIF output uses a generated palette. FFmpeg is started with an
-argument vector and receives RGB frames over stdin, never through a shell
-command string.
+H.264/yuv420p, GIF uses a generated palette, and PNG uses one lossless RGB
+frame. FFmpeg is started with an argument vector and receives RGB frames over
+stdin, never through a shell command string.
 
 ## 4. Current architecture
 
@@ -111,7 +115,7 @@ REGION_INFO / map / mission settings -+
                                       v
                                   FFmpeg
                                       |
-                                  MP4 or GIF
+                              MP4, GIF, or PNG
 ```
 
 ### Raw timeline and scene state
@@ -158,6 +162,7 @@ Implemented:
   LAT/LON conversion, geometry lifecycle, mission parsing, and render smoke;
 - decoded RGB checks for MP4/GIF codec, pixel format, dimensions, FPS,
   duration, frame count, and animation;
+- PNG signature, dimensions, exact timestamp, and golden-frame checks;
 - exact decoded-frame equivalence for `.tif` and `.tiff` aliases;
 - independent visual-effect checks for grid, labels, geometry, trails, and
   TIFF-versus-mapless rendering;
@@ -205,7 +210,7 @@ Implemented:
 
 | Platform | Context | Status / required coverage |
 | --- | --- | --- |
-| macOS Apple Silicon | CGL + FBO | Local build, tests, contract proof, MP4/GIF, and real-mission examples validated |
+| macOS Apple Silicon | CGL + FBO | Local build, tests, contract proof, MP4/GIF/PNG, and real-mission examples validated |
 | Ubuntu displayless | surfaceless EGL | Local Docker/VM build and tests validated with display variables unset |
 | macOS 14 Actions | CGL + FBO | Workflow pins official MOOS-IvP and runs CTest plus the product contract |
 | Ubuntu 24.04 Actions | surfaceless EGL | Workflow pins official MOOS-IvP and runs CTest plus the product contract |
@@ -232,14 +237,14 @@ The suite has these layers:
 2. scene-state and geometry-lifecycle tests;
 3. mission configuration and viewport tests;
 4. decoded RGB golden/tolerance checks;
-5. FFmpeg MP4/GIF integration checks with FFprobe;
+5. FFmpeg MP4/GIF/PNG integration checks with FFprobe;
 6. direct upstream pMarineViewer compositor parity;
 7. real-mission manual acceptance;
 8. no-display platform checks.
 
-## 8. Post-0.2 hardening
+## 8. Post-0.3 hardening
 
-Core headless generation and the `0.2.0` release gates are complete. The next
+Core headless generation and the `0.3.0` release gates are complete. The next
 hardening work should be:
 
 1. broaden fixtures for any upstream `VIEW_*` family not yet represented and
@@ -252,9 +257,10 @@ hardening work should be:
 5. keep the official MOOS-IvP revision pinned in required CI and test newer
    upstream revisions separately before advancing the pin.
 
-The `0.2.0` release requires:
+The `0.3.0` release requires:
 
-- natural-default MP4 and GIF output with correct metadata and animation;
+- natural-default MP4/GIF output plus exact-time PNG snapshots with correct
+  metadata and animation semantics;
 - mission and fit view coverage, including geometry-aware bounds;
 - grid absent by default and no alogview UI/footer;
 - macOS rendering without a visible window;

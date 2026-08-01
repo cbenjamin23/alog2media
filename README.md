@@ -1,20 +1,21 @@
 # alog2media
 
-`alog2media` turns a MOOS-IvP `.alog` into the pMarineViewer scene as an MP4
-or animated GIF. It renders offscreen: no desktop recording, visible window,
-alogview controls, or yellow camera footer.
+`alog2media` turns a MOOS-IvP `.alog` into the pMarineViewer scene as an MP4,
+animated GIF, or lossless PNG snapshot. It renders offscreen: no desktop
+recording, visible window, alogview controls, or yellow camera footer.
 
 ```bash
 alog2media mission.alog
 alog2media mission.alog -o mission.gif
+alog2media mission.alog --at 120 -o scene.png
 alog2media mission.alog -o excerpt.mp4 --start 20 --duration 30 --warp 4
 ```
 
 The log is always the first argument. The zero-option form writes
-`./mission.mp4`; the output suffix selects MP4 or GIF. Run `alog2media -h` for
-the complete, coherent option reference.
+`./mission.mp4`; the output suffix selects MP4, GIF, or PNG. Run
+`alog2media -h` for the complete, coherent option reference.
 
-The current release is `v0.2.0`. It is a native C++/CMake source package. The
+The current release is `v0.3.0`. It is a native C++/CMake source package. The
 supported dependency baseline is official MOOS-IvP commit
 `174bd7340c33b43e96e1b7eb1ef57aae4df385c9`; CI validates macOS and
 displayless Linux against that revision.
@@ -54,7 +55,8 @@ supported geometry.
 ## Useful options
 
 ```text
--o, --output FILE         Output .mp4 or .gif path.
+-o, --output FILE         Output .mp4, .gif, or .png path.
+--at SECONDS              Exact log time for a PNG snapshot.
 --start SECONDS           First log time to render.
 --duration SECONDS        Log-time duration to render.
 --warp FACTOR             Log seconds per output second.
@@ -74,7 +76,8 @@ supported geometry.
 Both `.tif` and `.tiff` maps are accepted and require a same-basename `.info`
 file. `--trails full` includes history only through the current frame, never
 future positions. `--view fit` considers vehicles and supported geometry
-active during the requested interval.
+active during the requested interval. PNG output contains exactly one
+lossless frame; it uses `--at` rather than video interval, FPS, or warp options.
 
 ## Build and install
 
@@ -86,7 +89,7 @@ produce MP4.
 Clone the release and supported MOOS-IvP revision:
 
 ```bash
-git clone --branch v0.2.0 https://github.com/cbenjamin23/alog2media.git
+git clone --branch v0.3.0 https://github.com/cbenjamin23/alog2media.git
 git clone https://github.com/moos-ivp/moos-ivp.git
 git -C moos-ivp checkout 174bd7340c33b43e96e1b7eb1ef57aae4df385c9
 cd moos-ivp
@@ -139,10 +142,10 @@ env -u DISPLAY -u WAYLAND_DISPLAY \
 ```
 
 Tests cover parsing and timeline order, map and mission resolution, geometry
-lifecycle, option precedence, input immutability, MP4/GIF metadata, and direct
-frame comparison with an independently built upstream `PMV_Viewer.cpp`
-reference. GitHub Actions repeats the suite on macOS 14/CGL and Ubuntu
-24.04/surfaceless EGL.
+lifecycle, option precedence, input immutability, MP4/GIF metadata, exact-time
+PNG snapshots, and direct frame comparison with an independently built
+upstream `PMV_Viewer.cpp` reference. GitHub Actions repeats the suite on macOS
+14/CGL and Ubuntu 24.04/surfaceless EGL.
 
 See [the validation record](docs/VALIDATION.md) for exact results and real
 mission examples, and [the implementation plan](docs/IMPLEMENTATION_PLAN.md)
@@ -152,8 +155,8 @@ for remaining hardening work.
 
 - One `.alog` is rendered at a time.
 - Unlogged interactive pan, zoom, and visibility changes are unrecoverable.
-- Output is MP4 or animated GIF; additional containers/codecs are not yet a
-  supported interface.
+- Output is H.264 MP4, animated GIF, or lossless PNG; additional
+  containers/codecs are not yet a supported interface.
 - Source community is inferred where the alog format does not retain it.
 - Fonts are system-provided, so antialiasing may differ slightly by platform.
 - The current state holder still inherits `Fl_Gl_Window`, but constructs no

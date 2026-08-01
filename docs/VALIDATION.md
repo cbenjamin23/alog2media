@@ -14,9 +14,9 @@ The repository has two complementary test layers:
   against upstream `PMV_Viewer.cpp` in an independent offscreen compositor.
 - `tests/proof/run_contract.py` inspects externally visible behavior using
   FFprobe and decoded RGB frames. It checks input immutability, MP4/GIF
-  metadata, animation, `.tif`/`.tiff` equivalence, a mapless golden frame,
-  mission/CLI precedence, and independent grid, label, geometry, trail, and
-  map effects.
+  metadata, lossless PNG snapshots, animation, `.tif`/`.tiff` equivalence, a
+  mapless golden frame, mission/CLI precedence, and independent grid, label,
+  geometry, trail, and map effects.
 
 The contract deliberately creates read-only source files and directories with
 spaces and Unicode in their names. It snapshots filenames, modes, sizes, and
@@ -37,6 +37,26 @@ env -u DISPLAY -u WAYLAND_DISPLAY \
     --fixture-map build/fixture_map \
     --require-headless-env
 ```
+
+## 2026-08-01 — PNG snapshot release gate
+
+The CLI accepts `.png` output with one exact log timestamp:
+
+```bash
+alog2media mission.alog --at 120 -o scene.png
+```
+
+Option tests prove that `--at` requires PNG, that PNG rejects video interval,
+FPS, and warp options, and that PNG permits odd dimensions while MP4 retains
+the H.264 even-size constraint. The render smoke test produced a 319×179
+`rgb24` PNG and FFprobe identified the `png` codec.
+
+The complete read-only contract rendered `--at 0.5` at 320×180, verified the
+PNG signature, decoded exactly one RGB image, and compared it with the
+committed mapless golden. At an 8-level per-channel tolerance, 457 of 57,600
+pixels differed and mean absolute error was 0.535995/255, within the same
+cross-platform limits used for scene fidelity. The Unicode/space input tree
+remained byte-for-byte and mode-for-mode unchanged with no `_alvtmp` path.
 
 ## 2026-08-01 — automatic mission discovery
 
