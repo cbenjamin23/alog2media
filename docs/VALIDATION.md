@@ -58,6 +58,51 @@ input paths, import of conventional `targ_shoreside.moos` even when generic
 fallback is disabled, a single generically named pMarineViewer mission when
 fallback is needed, and rejection of ambiguous generic candidates.
 
+## 2026-08-01 — real-mission v0.2.0 release gate
+
+Two existing missions were launched normally, logged, and rendered with the
+same short command shape. Neither export supplied `--mission`, `--map`,
+`--view`, camera, trail, grid, label, or geometry overrides:
+
+```bash
+alog2media SHADOW_SHORESIDE.alog --warp 12 \
+  -o shadow-turn-north-natural.mp4
+
+alog2media FIGURE8_SHORESIDE.alog --warp 12 \
+  -o charlie-concentric-natural.mp4
+```
+
+The logs and MIT map imagery were used as local acceptance data and are not
+committed. The resulting evidence was:
+
+| Mission | Logged evidence | Output |
+| --- | --- | --- |
+| Shadow harness `turn_north_shadow_pass` | `MISSION_EVALUATED=true`; Abe and Ben reports show the north-turn sequence | H.264, 1280×720, 15 fps, 163 frames, 10.867 s |
+| Charlie two-boat concentric figure eight | both `alpha_figure8` and `bravo_figure8` seglists plus continuing reports from both vehicles | H.264, 1280×720, 15 fps, 290 frames, 19.333 s |
+
+The figure-eight mission's launch camera was adjusted to `zoom=1.5`,
+`pan_x=88`, and `pan_y=-470` before the run. Its logged `REGION_INFO` contains
+those exact values, so alog2media reproduces the improved startup scene from
+the log rather than applying an exporter-only crop. Both figure eights and
+both vehicles are visible in the natural output.
+
+Representative frames were also rendered through the independently compiled
+upstream `PMV_Viewer.cpp` reference. Trails and the grid were disabled in both
+comparison paths only to isolate the instantaneous compositor; the natural
+videos above retained mission defaults.
+
+| Mission / log time | Changed pixels | Changed fraction | Mean absolute error |
+| --- | ---: | ---: | ---: |
+| Shadow / 80 s | 3,300 / 921,600 | 0.358% | 0.548 / 255 |
+| Figure eight / 120 s | 0 / 921,600 | 0.000% | 0.000 / 255 |
+
+For the figure-eight comparison, both reference and alog2media frames passed
+through the same H.264/yuv420p encoder before decoding. The decoded frames
+were byte-identical. Comparing the raw reference directly with the decoded
+video changed 5.681% of pixels with mean absolute error 2.295, demonstrating
+that the larger raw comparison delta came from lossy video encoding rather
+than a scene-compositor discrepancy.
+
 ## 2026-07-31 — macOS Apple Silicon
 
 Environment:
