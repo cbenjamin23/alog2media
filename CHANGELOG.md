@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-08-01
+
+- Export a lossless single-frame PNG snapshot with `--at SECONDS`.
+- Reject video interval and rate options for PNG instead of silently ignoring
+  them, while allowing PNG dimensions that do not meet H.264's even-size rule.
+- Prove PNG signatures, dimensions, timestamp selection, input immutability,
+  and golden-frame fidelity in the cross-platform product contract.
+
 ## 0.2.0 - 2026-08-01
 
 - Automatically discover `targ_shoreside.moos` for launch-time visual settings
