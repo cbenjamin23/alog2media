@@ -1,0 +1,14 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOG FILE:       synthetic raw timeline fixture
+%% LOGSTART           1000.000000
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+0.00000         DB_TIME              MOOSDB_shoreside 1000.00000
+0.00001         REGION_INFO          pMarineViewer   lat_datum=42.0,lon_datum=-71.0,zoom=1,pan_x=0,pan_y=0
+0.10000         NODE_REPORT          pNodeReporter   NAME=alpha,X=1,Y=2,HDG=90
+0.20000         NODE_REPORT          pNodeReporter   NAME=alpha,TYPE=kayak,X=3,Y=4,HDG=45,COLOR=yellow,LENGTH=4
+0.20000         NODE_REPORT          pNodeReporter   NAME=alpha,TYPE=kayak,X=5,Y=6,HDG=0,COLOR=yellow
+0.30000         NODE_REPORT          pNodeReporter   NAME=bravo,TYPE=auv,LAT=42.0001,LON=-70.9999,HDG=180
+0.40000         VIEW_CIRCLE          pMarineViewer   x=100,y=0,radius=20,label=far_circle
+0.50000         VIEW_POLYGON         pMarineViewer   pts={-80,-20:-60,-20:-60,20:-80,20},label=far_poly
+1.00000         VIEW_WEDGE           pMarineViewer   x=0,y=0,ang1=10,ang2=40,range=15,label=wedge
+2.00000         APPCAST              pMarineViewer   final fixture timestamp

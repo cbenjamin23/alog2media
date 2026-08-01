@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MOOS_IVP_COMMIT: 174bd7340c33b43e96e1b7eb1ef57aae4df385c9
+  LIBGL_ALWAYS_SOFTWARE: "1"
+  EGL_PLATFORM: surfaceless
+  ALOG2MEDIA_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+
+jobs:
+  macos-headless:
+    name: macOS 14 / CGL
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      ALOG2MEDIA_FONT: /System/Library/Fonts/Supplemental/Arial Bold.ttf
+
+    steps:
+      - name: Check out alog2media
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Select temporary build paths
+        run: |
+          echo "MOOS_IVP_ROOT=${RUNNER_TEMP}/moos-ivp" >> "$GITHUB_ENV"
+          echo "ALOG2MEDIA_BUILD_DIR=${RUNNER_TEMP}/alog2media-build" >> "$GITHUB_ENV"
+
+      - name: Install build and media dependencies
+        run: brew install cmake ffmpeg fltk freetype libtiff
+
+      - name: Fetch pinned official MOOS-IvP revision
+        run: |
+          git init "$MOOS_IVP_ROOT"
+          git -C "$MOOS_IVP_ROOT" remote add origin \
+            https://github.com/moos-ivp/moos-ivp.git
+          git -C "$MOOS_IVP_ROOT" fetch --depth=1 --no-tags origin \
+            "$MOOS_IVP_COMMIT"
+          git -C "$MOOS_IVP_ROOT" checkout --detach FETCH_HEAD
+          test "$(git -C "$MOOS_IVP_ROOT" rev-parse HEAD)" = \
+            "$MOOS_IVP_COMMIT"
+
+      - name: Build pinned MOOS-IvP
+        run: |
+          cd "$MOOS_IVP_ROOT"
+          env -u DISPLAY -u WAYLAND_DISPLAY ./build.sh
+          test -f "$MOOS_IVP_ROOT/lib/libmarineview.a"
+          test -f \
+            "$MOOS_IVP_ROOT/build/MOOS/MOOSGeodesy/lib/libMOOSGeodesy.dylib"
+
+      - name: Configure and build alog2media without a display server
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            cmake -S . -B "$ALOG2MEDIA_BUILD_DIR" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DMOOS_IVP_ROOT="$MOOS_IVP_ROOT"
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            cmake --build "$ALOG2MEDIA_BUILD_DIR" --parallel 2
+
+      - name: Run tests and product proofs without a display server
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            ctest --test-dir "$ALOG2MEDIA_BUILD_DIR" \
+              --output-on-failure --no-tests=error
+          python3 -m unittest discover -s tests/proof -p 'test_*.py'
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            python3 tests/proof/run_contract.py \
+              --alog2media "$ALOG2MEDIA_BUILD_DIR/alog2media" \
+              --fixture-map "$ALOG2MEDIA_BUILD_DIR/fixture_map" \
+              --work-dir "${RUNNER_TEMP}/alog2media-proof" \
+              --require-headless-env
+
+  ubuntu-headless:
+    name: Ubuntu 24.04 / surfaceless EGL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out alog2media
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Select temporary build paths
+        run: |
+          echo "MOOS_IVP_ROOT=${RUNNER_TEMP}/moos-ivp" >> "$GITHUB_ENV"
+          echo "ALOG2MEDIA_BUILD_DIR=${RUNNER_TEMP}/alog2media-build" >> "$GITHUB_ENV"
+
+      - name: Install build and media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            cmake \
+            ffmpeg \
+            fonts-dejavu-core \
+            freeglut3-dev \
+            git \
+            libegl1-mesa-dev \
+            libfltk1.3-dev \
+            libfreetype6-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libtiff-dev \
+            libxft-dev \
+            libxinerama-dev \
+            mesa-common-dev \
+            ninja-build \
+            pkg-config \
+            python3
+
+      - name: Fetch pinned official MOOS-IvP revision
+        run: |
+          git init "$MOOS_IVP_ROOT"
+          git -C "$MOOS_IVP_ROOT" remote add origin \
+            https://github.com/moos-ivp/moos-ivp.git
+          git -C "$MOOS_IVP_ROOT" fetch --depth=1 --no-tags origin \
+            "$MOOS_IVP_COMMIT"
+          git -C "$MOOS_IVP_ROOT" checkout --detach FETCH_HEAD
+          test "$(git -C "$MOOS_IVP_ROOT" rev-parse HEAD)" = \
+            "$MOOS_IVP_COMMIT"
+
+      - name: Build pinned MOOS-IvP
+        run: |
+          cd "$MOOS_IVP_ROOT"
+          env -u DISPLAY -u WAYLAND_DISPLAY ./build.sh
+          test -f "$MOOS_IVP_ROOT/lib/libmarineview.a"
+          shopt -s nullglob
+          geodesy_libraries=(
+            "$MOOS_IVP_ROOT"/build/MOOS/MOOSGeodesy/lib/libMOOSGeodesy.*
+          )
+          test "${#geodesy_libraries[@]}" -gt 0
+
+      - name: Configure alog2media without a display server
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            cmake -S . -B "$ALOG2MEDIA_BUILD_DIR" -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DMOOS_IVP_ROOT="$MOOS_IVP_ROOT"
+
+      - name: Build alog2media without a display server
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            cmake --build "$ALOG2MEDIA_BUILD_DIR" --parallel 2
+
+      - name: Run CTest without a display server
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            ctest --test-dir "$ALOG2MEDIA_BUILD_DIR" \
+              --output-on-failure --no-tests=error
+
+      - name: Test proof helpers
+        run: |
+          python3 -m unittest discover -s tests/proof -p 'test_*.py'
+          python3 -m py_compile tests/proof/media_assert.py \
+            tests/proof/run_contract.py
+
+      - name: Run product contract proofs without a display server
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            python3 tests/proof/run_contract.py \
+              --alog2media "$ALOG2MEDIA_BUILD_DIR/alog2media" \
+              --fixture-map "$ALOG2MEDIA_BUILD_DIR/fixture_map" \
+              --work-dir "${RUNNER_TEMP}/alog2media-proof" \
+              --require-headless-env

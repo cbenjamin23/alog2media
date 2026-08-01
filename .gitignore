@@ -4,3 +4,5 @@
 /*.gif
 *.alog_alvtmp/
 .DS_Store
+__pycache__/
+*.py[cod]

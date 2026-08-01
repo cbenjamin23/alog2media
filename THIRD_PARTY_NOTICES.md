@@ -2,14 +2,17 @@
 
 `alog2media` is designed to build against an existing MOOS-IvP checkout and
 invoke an existing FFmpeg executable. Those dependencies are not vendored in
-this source repository.
+this source repository. The install target copies the linked MOOSGeodesy
+shared library next to the executable's installation tree so the installed
+binary retains its coordinate-conversion dependency.
 
 ## MOOS-IvP
 
-The current renderer links MOOS-IvP libraries and compiles the checkout's
-`app_alogview/NavPlotViewer.cpp` as a dependency source. `MediaRenderer.cpp`
-adapts its protected drawing sequence to omit the alogview-only debug footer
-and target an offscreen framebuffer.
+The renderer links MOOS-IvP libraries and reuses the `MarineViewer` map,
+vehicle, and geometry drawing primitives. Its own `HeadlessSceneViewer`
+composes those primitives into an offscreen framebuffer and intentionally
+omits alogview's controls and pan/zoom footer. It does not compile or run
+`NavPlotViewer`, `ALogDataBroker`, or `SplitHandler`.
 
 - Project: <https://github.com/moos-ivp/moos-ivp>
 - License: GNU GPL version 3 or later for the relevant viewer/logging code;
@@ -22,8 +25,9 @@ provenance; it is not yet the portable minimum-version declaration.
 
 ## FLTK
 
-FLTK supplies compatibility OpenGL declarations and legacy text drawing used
-by the current MOOS-IvP viewer implementation.
+FLTK supplies the state-holder base class and compatibility OpenGL declarations
+used by the current MOOS-IvP viewer implementation. alog2media constructs no
+native FLTK window and does not run the FLTK event loop.
 
 - Project: <https://www.fltk.org/>
 - License: FLTK License (LGPL-2.0 with exceptions)

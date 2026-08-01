@@ -1,0 +1,15 @@
+ServerHost = localhost
+ServerPort = 9000
+Community = shoreside
+
+LatOrigin = 42.358436
+LongOrigin = -71.087448
+
+ProcessConfig = pMarineViewer
+{
+  TIFF_FILE = first.tif
+  hash_viewable = false
+  Vehicles_Name_Mode = names + depth
+  hash_viewable = true
+  point_viewable_all = false  // This comment is not part of the value.
+}

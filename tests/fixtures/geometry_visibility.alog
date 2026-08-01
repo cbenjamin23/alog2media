@@ -1,0 +1,12 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOG FILE:       synthetic geometry visibility fixture
+%% LOGSTART           2000.000000
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+0.00000         DB_TIME              MOOSDB_proof    2000.00000
+0.00001         REGION_INFO          pMarineViewer   lat_datum=42.0, lon_datum=-71.0, img_file=geometry_visibility.tif, zoom=1, pan_x=0, pan_y=0
+0.00002         NODE_REPORT_LOCAL    pNodeReporter   NAME=proof,TYPE=kayak,COLOR=yellow,LENGTH=4
+0.00003         NAV_X                uSimMarine      -40.00000
+0.00004         NAV_Y                uSimMarine      -30.00000
+0.00005         NAV_HEADING          uSimMarine      45.00000
+0.00006         VIEW_POINT           pMarineViewer   x=30,y=20,label=MISSION_HIDDEN,vertex_color=magenta,label_color=white,vertex_size=36
+1.00000         DB_TIME              MOOSDB_proof    2001.00000

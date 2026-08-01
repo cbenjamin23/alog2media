@@ -110,11 +110,25 @@ ParseResult parseOptions(int argc, char* argv[]) {
       result.options.output = argv[++index];
     } else if(isValueOption(argument, "--output")) {
       result.options.output = optionValue(argument, index, argc, argv, "--output");
+    } else if(isValueOption(argument, "--mission")) {
+      value = optionValue(argument, index, argc, argv, "--mission");
+      std::filesystem::path mission(value);
+      if(!hasExtension(mission, {".moos"}))
+        throw UsageError("--mission accepts a .moos file");
+      result.options.mission = std::move(mission);
     } else if(isValueOption(argument, "--map")) {
       value = optionValue(argument, index, argc, argv, "--map");
+      if(lower(value) == "none") {
+        result.options.map_mode = MapMode::none;
+        result.options.map.reset();
+        continue;
+      }
       std::filesystem::path map(value);
       if(!hasExtension(map, {".tif", ".tiff"}))
-        throw UsageError("--map accepts .tif or .tiff files; a matching .info is also required");
+        throw UsageError(
+            "--map accepts 'none', .tif, or .tiff; TIFF maps also require "
+            "matching .info metadata");
+      result.options.map_mode = MapMode::file;
       result.options.map = std::move(map);
     } else if(isValueOption(argument, "--view")) {
       value = lower(optionValue(argument, index, argc, argv, "--view"));
@@ -146,22 +160,50 @@ ParseResult parseOptions(int argc, char* argv[]) {
       result.options.height = dimensions.second;
     } else if(isValueOption(argument, "--grid")) {
       value = lower(optionValue(argument, index, argc, argv, "--grid"));
-      if(value == "on")
-        result.options.grid = true;
+      if(value == "auto")
+        result.options.grid = ToggleMode::automatic;
+      else if(value == "on")
+        result.options.grid = ToggleMode::on;
       else if(value == "off")
-        result.options.grid = false;
+        result.options.grid = ToggleMode::off;
       else
-        throw UsageError("--grid must be 'on' or 'off'");
+        throw UsageError("--grid must be 'auto', 'on', or 'off'");
+    } else if(isValueOption(argument, "--labels")) {
+      value = lower(optionValue(argument, index, argc, argv, "--labels"));
+      if(value == "auto")
+        result.options.labels = ToggleMode::automatic;
+      else if(value == "on")
+        result.options.labels = ToggleMode::on;
+      else if(value == "off")
+        result.options.labels = ToggleMode::off;
+      else
+        throw UsageError("--labels must be 'auto', 'on', or 'off'");
+    } else if(isValueOption(argument, "--geometry")) {
+      value = lower(optionValue(argument, index, argc, argv, "--geometry"));
+      if(value == "auto")
+        result.options.geometry = ToggleMode::automatic;
+      else if(value == "on")
+        result.options.geometry = ToggleMode::on;
+      else if(value == "off")
+        result.options.geometry = ToggleMode::off;
+      else
+        throw UsageError("--geometry must be 'auto', 'on', or 'off'");
     } else if(isValueOption(argument, "--trails")) {
       value = lower(optionValue(argument, index, argc, argv, "--trails"));
-      if(value == "window")
-        result.options.trails = TrailsMode::window;
+      result.options.trails_seconds.reset();
+      if(value == "auto" || value == "window")
+        result.options.trails = TrailsMode::automatic;
       else if(value == "off")
         result.options.trails = TrailsMode::off;
-      else if(value == "all")
-        result.options.trails = TrailsMode::all;
-      else
-        throw UsageError("--trails must be 'window', 'off', or 'all'");
+      else if(value == "full" || value == "all")
+        result.options.trails = TrailsMode::full;
+      else {
+        const double seconds = parseNumber(value, "--trails");
+        if(seconds <= 0)
+          throw UsageError("--trails SECONDS must be greater than zero");
+        result.options.trails = TrailsMode::seconds;
+        result.options.trails_seconds = seconds;
+      }
     } else if(argument == "--force") {
       result.options.force = true;
     } else if(argument == "-v" || argument == "--verbose") {
@@ -214,27 +256,37 @@ Time:
   --warp FACTOR              Log seconds per output second. Default: 1
 
 Scene:
-  --map FILE.tif|FILE.tiff   Override the map named by REGION_INFO. Both .tif
-                             and .tiff are accepted; matching .info metadata is
-                             required.
+  --mission FILE.moos        Import supported pMarineViewer launch settings.
+  --map FILE.tif|FILE.tiff   Override the configured TIFF map; matching .info
+                             metadata is required. Use '--map none' for a
+                             mapless local-coordinate scene.
   --view mission|fit         mission uses REGION_INFO pan/zoom (default); fit
-                             frames all vehicle tracks.
-  --grid on|off              Draw the coordinate grid. Default: off
-  --trails window|off|all    Draw the normal recent trail (default), no trail,
-                             or the complete track.
+                             frames visible scene content.
+  --grid auto|on|off         Follow mission config, force grid on, or force it
+                             off. auto falls back to off.
+  --labels auto|on|off       Follow mission config or override all supported
+                             scene labels. auto falls back to on.
+  --geometry auto|on|off     Follow mission config or override all logged
+                             VIEW_* geometry. auto falls back to on.
+  --trails auto|off|full|SECONDS
+                             Follow mission config, hide trails, draw the full
+                             track, or draw the most recent log-time window.
+                             auto falls back to the normal recent trail.
 
 General:
-  -v, --verbose              Show log caching, map discovery, and render details.
+  -v, --verbose              Show parser, map discovery, and render details.
   -h, --help                 Show this complete option reference.
   -V, --version              Show version and renderer-backend information.
 
 Options may use either '--option value' or '--option=value'. The output suffix
-selects MP4 or GIF encoding. FFmpeg must be available on PATH.
+selects MP4 or GIF encoding. Explicit CLI scene options override mission-file
+settings. FFmpeg must be available on PATH.
 
 Examples:
   alog2media mission.alog
   alog2media mission.alog -o clip.gif --start 20 --duration 30 --warp 4
-  alog2media mission.alog --map harbor.tiff --view fit --grid off
+  alog2media mission.alog --mission mission.moos --grid auto --trails 30
+  alog2media mission.alog --map none --view fit --labels off
 )HELP";
 }
 

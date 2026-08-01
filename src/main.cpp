@@ -15,9 +15,6 @@ namespace {
 int run(const alog2media::Options& options) {
   if(!std::filesystem::is_regular_file(options.input))
     throw std::runtime_error("input .alog file does not exist or is not a regular file");
-  if(options.input.string().find_first_of(" \t\r\n") != std::string::npos)
-    throw std::runtime_error(
-        "this initial MOOS-IvP-backed reader cannot process .alog paths containing whitespace");
   if(std::filesystem::exists(options.output) && !options.force)
     throw std::runtime_error(
         "output already exists; choose another path or pass --force");

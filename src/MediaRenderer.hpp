@@ -2,6 +2,7 @@
 
 #include "Options.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -17,7 +18,10 @@ struct RenderMetadata {
   std::string map;
   std::string backend;
   bool used_region_info = false;
+  bool used_mission = false;
   bool fit_view = false;
+  std::size_t vehicle_count = 0;
+  std::size_t geometry_event_count = 0;
 };
 
 class MediaRenderer {

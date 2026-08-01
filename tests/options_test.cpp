@@ -37,13 +37,28 @@ int main() {
   const auto tif = parse({"alog2media", "mission.alog", "--map", "harbor.tif"});
   require(tif.options.map && tif.options.map->extension() == ".tif",
           "--map accepts .tif");
+  require(tif.options.map_mode == alog2media::MapMode::file,
+          "a TIFF selects file map mode");
 
   const auto tiff = parse({"alog2media", "mission.alog", "--map=harbor.tiff"});
   require(tiff.options.map && tiff.options.map->extension() == ".tiff",
           "--map accepts .tiff");
 
+  const auto mapless = parse({"alog2media", "mission.alog", "--map", "none"});
+  require(mapless.options.map_mode == alog2media::MapMode::none &&
+              !mapless.options.map,
+          "--map none selects a mapless scene");
+
+  const auto mission = parse(
+      {"alog2media", "mission.alog", "--mission=viewer.moos"});
+  require(mission.options.mission &&
+              mission.options.mission->filename() == "viewer.moos",
+          "--mission accepts .moos files");
+
   require(rejects({"alog2media", "mission.alog", "--map", "harbor.png"}),
           "--map rejects non-TIFF extensions");
+  require(rejects({"alog2media", "mission.alog", "--mission", "viewer.txt"}),
+          "--mission rejects non-.moos extensions");
   require(rejects({"alog2media", "--grid", "off", "mission.alog"}),
           "input must be first");
   require(rejects({"alog2media", "mission.alog", "--duration", "2", "--end", "3"}),
@@ -58,10 +73,13 @@ int main() {
           "help documents both TIFF extensions");
   require(alog2media::helpText().find("--view mission|fit") != std::string::npos,
           "help documents view modes");
+  require(alog2media::helpText().find("--trails auto|off|full|SECONDS") !=
+              std::string::npos,
+          "help documents every trail mode");
   const std::vector<std::string> documented_options = {
     "--output", "--size", "--fps", "--force", "--start", "--end",
-    "--duration", "--warp", "--map", "--view", "--grid", "--trails",
-    "--verbose", "--help", "--version"
+    "--duration", "--warp", "--mission", "--map", "--view", "--grid",
+    "--labels", "--geometry", "--trails", "--verbose", "--help", "--version"
   };
   for(const std::string& option : documented_options) {
     require(alog2media::helpText().find(option) != std::string::npos,
@@ -71,7 +89,44 @@ int main() {
   const auto defaults = parse({"alog2media", "mission.alog"});
   require(defaults.options.view == alog2media::ViewMode::mission,
           "mission viewport is the default");
-  require(!defaults.options.grid, "grid defaults off");
+  require(defaults.options.map_mode == alog2media::MapMode::automatic,
+          "map defaults to automatic discovery");
+  require(defaults.options.grid == alog2media::ToggleMode::automatic,
+          "grid defaults to auto");
+  require(defaults.options.labels == alog2media::ToggleMode::automatic,
+          "labels default to auto");
+  require(defaults.options.geometry == alog2media::ToggleMode::automatic,
+          "geometry defaults to auto");
+  require(defaults.options.trails == alog2media::TrailsMode::automatic,
+          "trails default to auto");
+
+  const auto toggles = parse({"alog2media", "mission.alog", "--grid", "on",
+                              "--labels=off", "--geometry", "auto"});
+  require(toggles.options.grid == alog2media::ToggleMode::on,
+          "--grid on is explicit");
+  require(toggles.options.labels == alog2media::ToggleMode::off,
+          "--labels off is explicit");
+  require(toggles.options.geometry == alog2media::ToggleMode::automatic,
+          "--geometry auto follows configuration");
+  require(rejects({"alog2media", "mission.alog", "--geometry", "sometimes"}),
+          "tri-state options reject unknown values");
+
+  const auto trail_window =
+      parse({"alog2media", "mission.alog", "--trails", "12.5"});
+  require(trail_window.options.trails == alog2media::TrailsMode::seconds &&
+              trail_window.options.trails_seconds &&
+              *trail_window.options.trails_seconds == 12.5,
+          "--trails accepts a positive seconds window");
+  const auto full = parse({"alog2media", "mission.alog", "--trails=full"});
+  require(full.options.trails == alog2media::TrailsMode::full &&
+              !full.options.trails_seconds,
+          "--trails full selects the complete track");
+  const auto compatible =
+      parse({"alog2media", "mission.alog", "--trails", "all"});
+  require(compatible.options.trails == alog2media::TrailsMode::full,
+          "legacy --trails all remains an alias for full");
+  require(rejects({"alog2media", "mission.alog", "--trails", "0"}),
+          "--trails rejects a zero-length window");
 
   std::cout << "options tests passed\n";
   return 0;

@@ -1,0 +1,13 @@
+ServerHost = localhost
+ServerPort = 9000
+Community  = proof
+
+ProcessConfig = pMarineViewer
+{
+  AppTick  = 4
+  CommsTick = 4
+
+  // Auto geometry follows this family-specific mission setting. The proof
+  // runner then checks that --geometry=on overrides it globally.
+  point_viewable_all = false
+}

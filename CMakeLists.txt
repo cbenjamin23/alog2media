@@ -39,6 +39,9 @@ else()
   find_package(OpenGL REQUIRED COMPONENTS OpenGL EGL)
 endif()
 find_package(TIFF REQUIRED)
+find_package(MOOS REQUIRED CONFIG
+  PATHS "${MOOS_IVP_ROOT}/build/MOOS/MOOSCore"
+  NO_DEFAULT_PATH)
 
 find_library(MOOS_GEODESY_LIBRARY
   NAMES MOOSGeodesy
@@ -73,17 +76,19 @@ foreach(_name IN LISTS _ivp_library_names)
 endforeach()
 
 add_executable(alog2media
+  src/ALogTimeline.cpp
   src/FfmpegEncoder.cpp
+  src/GeometryReplay.cpp
+  src/HeadlessSceneViewer.cpp
   src/HeadlessText.cpp
   src/MediaRenderer.cpp
+  src/MissionConfig.cpp
   src/Options.cpp
-  src/main.cpp
-  "${MOOS_IVP_ROOT}/ivp/src/app_alogview/NavPlotViewer.cpp")
+  src/main.cpp)
 
 target_include_directories(alog2media PRIVATE
   src
   "${MOOS_IVP_ROOT}/include/ivp"
-  "${MOOS_IVP_ROOT}/ivp/src/app_alogview"
   "${MOOS_GEODESY_INCLUDE_DIR}"
   ${FLTK_INCLUDE_DIR})
 
@@ -98,6 +103,7 @@ target_compile_options(alog2media PRIVATE
 
 target_link_libraries(alog2media PRIVATE
   ${IVP_LIBRARIES}
+  MOOS::MOOS
   "${MOOS_GEODESY_LIBRARY}"
   ${FLTK_LIBRARIES}
   Freetype::Freetype
@@ -126,10 +132,20 @@ else()
   target_sources(alog2media PRIVATE src/OffscreenContextWindow.cpp)
 endif()
 
+if(APPLE)
+  set(_alog2media_install_rpath "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+elseif(UNIX)
+  set(_alog2media_install_rpath "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+endif()
+
 set_target_properties(alog2media PROPERTIES
-  BUILD_RPATH "${MOOS_IVP_ROOT}/build/MOOS/MOOSGeodesy/lib")
+  BUILD_RPATH "${MOOS_IVP_ROOT}/build/MOOS/MOOSGeodesy/lib"
+  INSTALL_RPATH "${_alog2media_install_rpath}")
 
 install(TARGETS alog2media RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES "${MOOS_GEODESY_LIBRARY}" DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(FILES LICENSE THIRD_PARTY_NOTICES.md README.md
+  DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
 if(BUILD_TESTING)
   add_executable(options_test tests/options_test.cpp src/Options.cpp)
@@ -141,6 +157,55 @@ if(BUILD_TESTING)
   add_test(NAME options COMMAND options_test)
   add_test(NAME cli_help COMMAND alog2media --help)
   add_test(NAME cli_version COMMAND alog2media --version)
+
+  add_executable(timeline_test
+    tests/timeline_test.cpp
+    src/ALogTimeline.cpp
+    src/GeometryReplay.cpp)
+  target_include_directories(timeline_test PRIVATE
+    src
+    "${MOOS_IVP_ROOT}/include/ivp"
+    "${MOOS_GEODESY_INCLUDE_DIR}")
+  target_compile_definitions(timeline_test PRIVATE
+    MOOSGEODESY_IMPL=MOOSGEODESY_IMPL_PROJ
+    USE_UTM
+    _USE_UNIQUE_PTR)
+  target_compile_options(timeline_test PRIVATE -Wall -Wextra -Wpedantic)
+  target_link_libraries(timeline_test PRIVATE
+    "${MOOS_GEODESY_LIBRARY}"
+    ${IVP_contacts_LIBRARY}
+    ${IVP_geometry_LIBRARY}
+    ${IVP_mbutil_LIBRARY}
+    m)
+  add_test(NAME timeline
+    COMMAND timeline_test
+      ${PROJECT_SOURCE_DIR}/tests/fixtures/timeline.alog
+      ${PROJECT_SOURCE_DIR}/tests/fixtures/latlon_only.alog)
+
+  add_executable(geometry_replay_test
+    tests/geometry_replay_test.cpp
+    src/GeometryReplay.cpp)
+  target_include_directories(geometry_replay_test PRIVATE
+    src
+    "${MOOS_IVP_ROOT}/include/ivp")
+  target_compile_options(geometry_replay_test PRIVATE
+    -Wall -Wextra -Wpedantic)
+  target_link_libraries(geometry_replay_test PRIVATE
+    ${IVP_geometry_LIBRARY}
+    ${IVP_mbutil_LIBRARY}
+    m)
+  add_test(NAME geometry_replay COMMAND geometry_replay_test)
+
+  add_executable(mission_config_test
+    tests/mission_config_test.cpp
+    src/MissionConfig.cpp)
+  target_include_directories(mission_config_test PRIVATE src)
+  target_compile_options(mission_config_test PRIVATE
+    -Wall -Wextra -Wpedantic)
+  target_link_libraries(mission_config_test PRIVATE MOOS::MOOS)
+  add_test(NAME mission_config
+    COMMAND mission_config_test
+      ${PROJECT_SOURCE_DIR}/tests/fixtures/mission.moos)
 
   add_executable(fixture_map tests/fixture_map.cpp)
   target_link_libraries(fixture_map PRIVATE TIFF::TIFF)
@@ -159,4 +224,11 @@ if(BUILD_TESTING)
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/render-smoke
         -P ${PROJECT_SOURCE_DIR}/tests/render_smoke.cmake)
   endif()
+
+  add_test(NAME install_smoke
+    COMMAND ${CMAKE_COMMAND}
+      -DBUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}
+      -DINSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/install-smoke
+      -DINSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}
+      -P ${PROJECT_SOURCE_DIR}/tests/install_smoke.cmake)
 endif()

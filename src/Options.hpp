@@ -9,11 +9,25 @@ namespace alog2media {
 
 enum class ParseAction { run, help, version };
 enum class ViewMode { mission, fit };
-enum class TrailsMode { window, off, all };
+enum class MapMode { automatic, file, none };
+enum class ToggleMode { automatic, on, off };
+enum class TrailsMode {
+  automatic,
+  off,
+  full,
+  seconds,
+
+  // Source compatibility for the original CLI spellings. New code should use
+  // automatic and full.
+  window = automatic,
+  all = full,
+};
 
 struct Options {
   std::filesystem::path input;
   std::filesystem::path output;
+  std::optional<std::filesystem::path> mission;
+  MapMode map_mode = MapMode::automatic;
   std::optional<std::filesystem::path> map;
   std::optional<double> start;
   std::optional<double> end;
@@ -23,8 +37,11 @@ struct Options {
   int width = 1280;
   int height = 720;
   ViewMode view = ViewMode::mission;
-  TrailsMode trails = TrailsMode::window;
-  bool grid = false;
+  ToggleMode grid = ToggleMode::automatic;
+  ToggleMode labels = ToggleMode::automatic;
+  ToggleMode geometry = ToggleMode::automatic;
+  TrailsMode trails = TrailsMode::automatic;
+  std::optional<double> trails_seconds;
   bool force = false;
   bool verbose = false;
 };

@@ -1,15 +1,21 @@
-# alog2media implementation and validation plan
+# alog2media implementation plan
 
-## Current implementation status
+## Current status
 
-| Phase | Status | Evidence |
+The first three product milestones are implemented:
+
+| Area | Status | Current evidence |
 | --- | --- | --- |
-| A — repository and CLI | First slice complete | Build, help/version, option tests, MP4/GIF pipeline |
-| B — macOS offscreen | First slice complete | CGL/FBO, unshown viewer, FreeType labels, real-log render |
-| C — parser/map isolation | Pending | Current broker still writes `_alvtmp` cache data |
-| D — renderer extraction | In progress | Explicit framebuffer draw adapter exists; FLTK inheritance remains |
-| E — Linux headless | First slice complete | EGL passes with display variables unset; OSMesa remains pending |
-| F — mission/full fit | Pending | REGION_INFO works; `--mission` and geometry-complete bounds remain |
+| Fidelity proofs | Implemented | C++ unit/integration tests, decoded-media contract tests, and a tolerant mapless golden frame |
+| Read-only raw-log input | Implemented | Direct `.alog` parsing through `std::ifstream`; no `SplitHandler`, alogview cache, or `<input>_alvtmp` |
+| Mission-aware scene | Implemented | `--mission`, tri-state visual options, geometry replay/lifetimes, mapless mode, and geometry-aware fit |
+| macOS headless rendering | Implemented | CGL framebuffer, no shown window, no FLTK event loop |
+| Linux headless rendering | Implemented for EGL | Surfaceless EGL succeeds with `DISPLAY` and `WAYLAND_DISPLAY` unset |
+| Renderer extraction | Partially complete | Rendering is isolated behind `HeadlessSceneViewer`, but it still derives from `MarineViewer` as a state holder |
+| Software fallback | Pending | OSMesa fallback and deterministic software-only goldens remain hardening work |
+
+The detailed, dated results are in [VALIDATION.md](VALIDATION.md). This plan
+separates what the product does now from remaining release hardening.
 
 ## 1. Product outcome
 
@@ -20,180 +26,187 @@ alog2media INPUT.alog [OPTIONS]
 ```
 
 It emits an MP4 or animated GIF containing only the pMarineViewer navigation
-viewport. It must not require screen recording, user interaction, a visible
+viewport. It does not require screen recording, user interaction, a visible
 window, `DISPLAY`, or `WAYLAND_DISPLAY`.
 
-The first positional argument remains the `.alog` path so humans and automation
-can use the same simple command. `alog2media -h` is the canonical, complete
-option reference. Both `--option value` and `--option=value` forms are accepted.
+The `.alog` is the first positional argument so humans, scripts, and a future
+demo skill can use the same command. `alog2media -h` is the complete option
+reference. Both `--option value` and `--option=value` forms are accepted.
 
 ## 2. Fidelity definition
 
 At a given timestamp, output should be visually equivalent to pMarineViewer
 when all of the following are equal:
 
-- output viewport dimensions;
-- TIFF map and `.info` metadata;
+- viewport dimensions;
+- TIFF map and `.info` metadata, or the same mapless coordinate plane;
 - local-coordinate datum;
 - pan and zoom;
-- current vehicle states and trails;
+- current vehicle states and trail policy;
 - active logged `VIEW_*` artifacts;
-- visibility settings and labels.
+- pMarineViewer visibility, style, and label settings that alog2media supports.
 
-The output excludes the menu bar, controls, cursor, window chrome, log plots,
-and alogview's yellow `--zoom/--panx/--pany` footer.
+The output intentionally excludes the menu bar, controls, cursor, window
+chrome, log plots, and alogview's yellow pan/zoom footer.
 
 “Exact” means the same positions, shapes, colors, map crop, layering, and text
-content. Same-platform golden images should be extremely close. macOS/Linux
-goldens may allow a small per-pixel tolerance for driver and font rasterization
-differences. Byte-for-byte identity across OpenGL implementations is not a
-release requirement.
+content for the supported scene. Same-platform golden images should be very
+close. Cross-platform tests allow a small per-channel and aggregate tolerance
+because OpenGL drivers and font rasterizers differ. Byte-for-byte identity
+between macOS and Linux is not a requirement.
 
-An `.alog` alone cannot reproduce unlogged interactive pan, zoom, or visibility
-changes. The renderer therefore applies configuration in this precedence order:
+An `.alog` cannot reconstruct an interactive pan, zoom, or visibility change
+that was never logged. The renderer applies configuration in this order:
 
 1. explicit CLI overrides;
-2. supported settings from an optional mission file;
-3. logged `REGION_INFO` map, datum, pan, and zoom;
-4. documented alog2media defaults.
+2. logged `REGION_INFO` map, datum, pan, and zoom;
+3. supported `ProcessConfig = pMarineViewer` settings from `--mission` when
+   log context does not supply the corresponding value;
+4. pMarineViewer-compatible alog2media defaults.
 
-The initial defaults are grid off, labels on, normal recent trails, all logged
-geometry on, and mission viewport mode.
+Natural defaults are the mission viewport, grid off, labels on, logged
+geometry on, and the normal recent trail. Mission settings can alter visual
+families when the matching CLI option remains `auto`.
 
-## 3. Target CLI
+## 3. Implemented CLI contract
 
-The implemented first slice includes output, size, FPS, start/end/duration,
-warp, map, view, grid, trails, force, verbose, help, and version options.
-
-The stable target adds:
+The principal scene options are:
 
 ```text
 --mission FILE.moos        Import supported pMarineViewer launch settings.
---map FILE.tif|FILE.tiff   Override TIFF; same-basename .info is required.
+--map FILE.tif|FILE.tiff   Override the logged/configured map.
 --map none                 Render a mapless local-coordinate scene.
---view mission|fit         Use configured viewport or fit all scene content.
---grid auto|on|off         auto follows mission config, otherwise off.
---trails auto|off|full|S   auto follows mission config; S is a time window.
---labels auto|on|off       auto follows mission config, otherwise on.
---diagnostics              Report selected context, renderer, and encoder.
+--view mission|fit         Use configured pan/zoom or fit tracks and geometry.
+--grid auto|on|off         Follow mission config or override the hash grid.
+--trails auto|off|full|S   Configured recent trail, none, full, or S seconds.
+--labels auto|on|off       Follow mission config or override scene labels.
+--geometry auto|on|off     Follow mission config or override logged geometry.
 ```
 
-Output suffix selects the encoder. MP4 uses H.264/yuv420p and rejects odd
-dimensions coherently. GIF uses a generated palette. FFmpeg is invoked through
-an argument vector and stdin pipe, never a shell string.
+The existing timing and encoding options include output, size, FPS, start,
+end, duration, warp, force, verbose, help, and version. `.tif` and `.tiff` are
+both accepted and require a same-basename `.info` file. MP4 uses
+H.264/yuv420p; GIF output uses a generated palette. FFmpeg is started with an
+argument vector and receives RGB frames over stdin, never through a shell
+command string.
 
-## 4. Architecture
-
-The final code is divided into four boundaries:
+## 4. Current architecture
 
 ```text
-.alog + optional .moos
-        |
-        v
-read-only timeline parser ----> scene state at timestamp
+.alog (read-only) + optional .moos
+          |
+          v
+raw timeline parser ----------> scene state at timestamp
                                       |
-REGION_INFO / map / settings ---------+
+REGION_INFO / map / mission settings -+
                                       v
-                              shared scene renderer
+                          HeadlessSceneViewer compositor
                                       |
-                       CGL / EGL / OSMesa framebuffer
+                         CGL or surfaceless EGL FBO
                                       |
                                       v
                                 RGB frame stream
                                       |
                                       v
-                                FFmpeg process
+                                  FFmpeg
                                       |
                                   MP4 or GIF
 ```
 
-The scene renderer owns pMarineViewer-compatible drawing. Context creation is a
-small platform interface and must never leak window-system assumptions into the
-scene model. Encoding is independent from parsing and rendering.
+### Raw timeline and scene state
 
-The current first slice intentionally reuses `ALogDataBroker`, `NavPlotViewer`,
-and the MOOS-IvP static libraries to establish end-to-end fidelity quickly. It
-already replaces the window back buffer with a macOS CGL or Linux surfaceless
-EGL context and framebuffer object. It does not use `LogViewLauncher` or
-`REPLAY_GUI`.
+`ALogTimeline` reads the source through a read-only `std::ifstream`. It parses
+`LOGSTART`, `DB_TIME`, `REGION_INFO`, `NAV_X/Y/HEADING`, local and geodetic
+`NODE_REPORT` variants, and supported logged geometry. Sample-and-hold and
+same-timestamp ordering are deterministic. LAT/LON-only reports are converted
+with the log or mission datum.
 
-## 5. Implementation phases
+`GeometryReplay` preserves event order and models activation, deactivation,
+same-label replacement, duration, expiry, and backward seeks for the supported
+pMarineViewer geometry families. Fit bounds include vehicle tracks and
+supported geometry active in the requested output interval.
 
-### Phase A — repository and executable contract
+`MissionConfig` reads the pMarineViewer block with the MOOS configuration
+reader and imports supported map, datum, pan/zoom, vehicle, trail, grid,
+label, and per-geometry-family settings. Explicit CLI values override imported
+settings.
 
-- Establish GPL licensing and third-party attribution.
-- Create a standard C++17/CMake build with explicit `MOOS_IVP_ROOT` discovery.
-- Implement the first-argument CLI, generated default output name, coherent
-  diagnostics, and complete `-h` output.
-- Accept both lowercase `.tif` and `.tiff`; require the matching `.info` file.
-- Stream frames to an argv-based FFmpeg child process.
+### Rendering and encoding
 
-Acceptance:
+`HeadlessSceneViewer` composes the scene in pMarineViewer order:
 
-- clean configure/build against the pinned checkout;
-- unit tests cover both TIFF suffixes and core option conflicts;
-- `-h` and `--version` work without OpenGL, FFmpeg, or an input log;
-- MP4 and GIF metadata match requested dimensions, FPS, and frame count.
+1. TIFF map, or mapless coordinate plane;
+2. optional coordinate hash/grid;
+3. active geometry, operation area, datum, and drop points;
+4. vehicle trails;
+5. vehicle bodies and names.
 
-### Phase B — offscreen macOS vertical slice
+It reuses MOOS-IvP map, vehicle, and geometry drawing primitives. On macOS it
+targets a CGL framebuffer; on Linux it targets surfaceless EGL. It constructs
+no native window and never starts the FLTK event loop. The current class still
+inherits `MarineViewer`/`Fl_Gl_Window` to reuse state and drawing behavior; that
+inheritance is an implementation dependency, not a runtime screen capture.
 
-- Create a legacy CGL compatibility context with an RGBA/depth framebuffer.
-- Construct the viewer as an unshown state/dimension holder only.
-- Reproduce the shared `MarineViewer` draw sequence against explicit framebuffer
-  dimensions.
-- Remove alogview-only overlays.
-- Read RGB directly from the framebuffer and flip rows for FFmpeg.
+## 5. Completed milestones
 
-Acceptance:
+### Milestone 1 — fidelity and regression proofs
 
-- rendering creates no `NSWindow` and never calls `Fl::run()`;
-- a real mission log renders to valid MP4 and GIF;
-- first/middle/last frames contain a nonblank map and changing vehicle state;
-- grid is absent by default;
-- map crop matches `REGION_INFO` pan/zoom.
+Implemented:
 
-### Phase C — parser and map isolation
+- C++ tests for option parsing, raw timeline semantics, same-time ordering,
+  LAT/LON conversion, geometry lifecycle, mission parsing, and render smoke;
+- decoded RGB checks for MP4/GIF codec, pixel format, dimensions, FPS,
+  duration, frame count, and animation;
+- exact decoded-frame equivalence for `.tif` and `.tiff` aliases;
+- independent visual-effect checks for grid, labels, geometry, trails, and
+  TIFF-versus-mapless rendering;
+- mission/CLI precedence checks;
+- a committed synthetic mapless golden frame with cross-platform tolerances;
+- SHA-256, mode, filename, and directory-tree snapshots around read-only
+  Unicode/space-path inputs.
 
-- Replace `ALogDataBroker`/`SplitHandler` with a read-only streaming parser.
-- Support paths containing spaces, Unicode, quotes, and shell metacharacters.
-- Keep any optional index under an explicit cache directory, never beside the
-  input unless requested.
-- Parse NAV state, `REGION_INFO`, `NODE_REPORT`, and every supported `VIEW_*`
-  family with activation, deactivation, duration, and expiry semantics.
-- Resolve maps deterministically: explicit path, log/mission directory, current
-  directory, `IVP_IMAGE_DIRS`, then installed MOOS-IvP data.
-- Validate TIFF contents and `.info` metadata before initializing OpenGL.
+The committed golden is a regression oracle for a deliberately small scene.
+It is not yet an independent pixel capture from pMarineViewer. A direct
+pMarineViewer-versus-alog2media reference corpus remains desirable before a
+strong “pixel identical” claim.
 
-Acceptance:
+### Milestone 2 — raw, non-mutating `.alog` parser
 
-- input logs are opened read-only and their directories remain unchanged;
-- synthetic parser fixtures cover state transitions and geometry lifetimes;
-- map errors list every attempted location and suggest `--map`.
+Implemented:
 
-### Phase D — renderer extraction and deterministic text
+- removed the runtime dependency on `ALogDataBroker`, `SplitHandler`, and
+  alogview-generated cache directories;
+- reads arbitrary filenames directly without rejecting whitespace or Unicode;
+- preserves deterministic event order and state-at-time behavior;
+- resolves `.tif` and `.tiff` maps without modifying the map or log directory;
+- proves the read-only input tree is unchanged after a complete render suite.
 
-- Move reusable map, vehicle, trail, and geometry drawing behind a renderer that
-  accepts scene, viewport, dimensions, and framebuffer.
-- Remove inheritance from `Fl_Gl_Window`.
-- Replace FLTK `gl_font`/`gl_draw` with an explicit, redistributable bundled font
-  and deterministic glyph atlas; record its license.
-- Keep a compatibility test that compares the extracted renderer to the current
-  pMarineViewer/MarineViewer implementation at exact timestamps.
+### Milestone 3 — mission-aware scene completeness
 
-Acceptance:
+Implemented:
 
-- final renderer links no FLTK windowing code;
-- label tests are deterministic on each platform;
-- reference-scene positions and colors match within agreed tolerances.
+- `--mission FILE.moos` and supported pMarineViewer launch settings;
+- tri-state `auto|on|off` controls for grid, labels, and geometry;
+- `auto|off|full|SECONDS` trail policies;
+- CLI override precedence over mission visibility settings;
+- mapless scenes and explicit map overrides;
+- mission viewport fallback and geometry-aware `--view fit`;
+- broad logged geometry replay with lifecycle and replacement behavior;
+- pMarineViewer-compatible draw ordering for map, geometry, trails, vehicles,
+  and labels.
 
-### Phase E — Linux headless backends
+## 6. Platform and CI plan
 
-- Implement surfaceless EGL as the preferred Linux backend.
-- Implement OSMesa as a software fallback and deterministic CI backend.
-- Add `--diagnostics` so tests can assert which backend was selected.
-- Never silently fall back to X11/Wayland or Xvfb in headless mode.
+| Platform | Context | Status / required coverage |
+| --- | --- | --- |
+| macOS Apple Silicon | CGL + FBO | Local build, tests, contract proof, MP4/GIF, and real-mission examples validated |
+| Ubuntu displayless | surfaceless EGL | Local Docker/VM build and tests validated with display variables unset |
+| macOS 14 Actions | CGL + FBO | Workflow pins official MOOS-IvP and runs CTest plus the product contract |
+| Ubuntu 24.04 Actions | surfaceless EGL | Workflow pins official MOOS-IvP and runs CTest plus the product contract |
+| Ubuntu | OSMesa | Pending fallback and deterministic software rendering |
+| macOS/Linux | ASan/UBSan | Pending parser/render hardening |
 
-Acceptance:
+The Linux command must continue to work without Xvfb:
 
 ```bash
 env -u DISPLAY -u WAYLAND_DISPLAY \
@@ -201,95 +214,56 @@ env -u DISPLAY -u WAYLAND_DISPLAY \
   ctest --test-dir build --output-on-failure
 ```
 
-must build, render, encode, and pass without `xvfb-run`.
+## 7. Test-fixture policy
 
-### Phase F — mission configuration and complete fit mode
+Only original synthetic fixtures and reference frames belong in this
+repository. Private mission logs and MIT background map imagery may be used
+for local acceptance, but are not committed.
 
-- Parse the relevant `ProcessConfig = pMarineViewer` block supplied with
-  `--mission`.
-- Import map, grid, names, trails, pan/zoom, and supported per-geometry settings.
-- Make `auto` CLI values follow mission configuration.
-- Extend fit bounds from vehicle tracks to all visible/active `VIEW_*` content,
-  with stable padding and degenerate-scene behavior.
+The suite has these layers:
 
-Acceptance:
+1. option and parser unit tests;
+2. scene-state and geometry-lifecycle tests;
+3. mission configuration and viewport tests;
+4. decoded RGB golden/tolerance checks;
+5. FFmpeg MP4/GIF integration checks with FFprobe;
+6. real-mission manual acceptance;
+7. no-display platform checks.
 
-- a mission-file render matches a normal initial pMarineViewer launch;
-- CLI settings override mission values one by one;
-- missing `REGION_INFO` falls back to fit with an explicit warning and manifest.
+## 8. Remaining work and release gates
 
-## 6. Test fixtures
+Core headless generation is functional. Before calling fidelity fully proven,
+the next work should be:
 
-Commit only original, synthetic fixtures:
+1. create reviewed pMarineViewer reference captures for several representative
+   timestamps and compare decoded alog2media frames against them;
+2. broaden fixtures for any upstream `VIEW_*` family not yet represented and
+   for multi-community logs whose source community is no longer recoverable;
+3. remove `Fl_Gl_Window` inheritance from the state holder and use a bundled,
+   versioned font for stronger determinism;
+4. add OSMesa as a software fallback and run sanitizer jobs;
+5. encode to a temporary destination and atomically promote successful output,
+   so a failed FFmpeg process cannot leave a partial final file;
+6. keep the official MOOS-IvP revision pinned in required CI and test newer
+   upstream revisions separately before advancing the pin.
 
-- a tiny quadrant/checkerboard TIFF plus `.info` metadata;
-- the identical TIFF bytes exposed as `.tif` and `.tiff` during tests;
-- a small `.alog` containing LOGSTART, REGION_INFO, NAV_X/Y/HEADING,
-  NODE_REPORT_LOCAL, points, seglists, polygons, circles, and pulses;
-- variants with no REGION_INFO, missing map, inactive geometry, and expiry.
+A `0.1.0` release should require:
 
-Do not commit private mission data or redistribute MIT map imagery. A compact
-local MOOS-IvP mission log may be used for manual acceptance only.
+- natural-default MP4 and GIF output with correct metadata and animation;
+- mission and fit view coverage, including geometry-aware bounds;
+- grid absent by default and no alogview UI/footer;
+- macOS rendering without a visible window;
+- Linux rendering with display variables unset;
+- no mutation of source logs, maps, mission files, or their directory tree;
+- help, README, and implemented behavior in agreement;
+- GPL and third-party attribution complete;
+- required CI green against the pinned official MOOS-IvP revision;
+- a documented fidelity comparison to independent pMarineViewer references.
 
-Test layers:
+## 9. Updating the validation record
 
-1. option/parser unit tests;
-2. scene-state timestamp tests;
-3. map-validation and viewport tests;
-4. uncompressed RGB golden/tolerance tests;
-5. FFmpeg MP4/GIF integration tests inspected with `ffprobe`;
-6. pMarineViewer/al​ogview side-by-side fidelity references;
-7. no-display platform tests.
-
-For media tests, verify codec, pixel format, dimensions, FPS, duration, frame
-count, animation, and movement between decoded first/last frames. Failed
-encoding must not leave a corrupt final output; encode to a temporary path and
-atomically rename in the stable implementation.
-
-## 7. Platform matrix
-
-Local development and CI use the same fixtures:
-
-| Platform | Context | Required coverage |
-| --- | --- | --- |
-| macOS Apple Silicon | CGL + FBO | build, unit, render, MP4/GIF, fidelity |
-| Ubuntu 24.04 | surfaceless EGL | build, unit, DISPLAY-unset integration |
-| Ubuntu 24.04 | OSMesa | software fallback and golden rendering |
-| Ubuntu 24.04 | EGL/OSMesa + sanitizers | ASan/UBSan parser and render tests |
-
-Linux can be exercised locally in Docker/VM and on GitHub Actions. macOS is
-tested on Apple hardware locally and with a macOS Actions runner. VM/container
-success supplements but does not replace native macOS validation.
-
-## 8. Release gates
-
-No `0.1.0` release is tagged until all of the following are true:
-
-- `alog2media INPUT.alog` produces a valid MP4 with natural defaults;
-- MP4 and GIF pass metadata and decoded-frame validation;
-- `.tif` and `.tiff` render the same fixture identically;
-- mission viewport and fit viewport are both covered;
-- the output has no grid by default and no alogview footer;
-- macOS creates no visible window;
-- Linux passes with `DISPLAY` and `WAYLAND_DISPLAY` unset;
-- the parser does not mutate the input directory;
-- help and README match implemented behavior;
-- GPL and third-party attribution are complete;
-- CI pins a known upstream MOOS-IvP revision and a nightly job checks upstream
-  compatibility separately.
-
-## 9. Immediate validation record
-
-Development began against:
-
-- MOOS-IvP checkout: a built sibling checkout supplied through `MOOS_IVP_ROOT`
-- initial dependency revision:
-  `b4a6162b018cde48279659c8b595594990a29086`
-- macOS Apple Silicon toolchain
-- FLTK 1.4.4
-- FFmpeg available at `/opt/homebrew/bin/ffmpeg`
-
-Validation results belong in `docs/VALIDATION.md` with exact commands, artifact
-metadata, representative frames, known deviations, and the current release-gate
-status. Results are evidence, not evergreen claims; update them whenever the
-renderer or dependency revision changes.
+`docs/VALIDATION.md` records exact dependency revisions, commands, artifact
+metadata, representative examples, known deviations, and current gate status.
+Results are evidence tied to that revision and date, not evergreen claims.
+Update the record whenever parser behavior, scene composition, OpenGL context,
+font selection, or the pinned MOOS-IvP revision changes.
