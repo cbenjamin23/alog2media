@@ -66,6 +66,24 @@ int main() {
   require(rejects({"alog2media", "mission.alog", "--size", "1279x720"}),
           "odd H.264 dimensions are rejected");
 
+  const auto png = parse({"alog2media", "mission.alog", "--output",
+                          "snapshot.PNG", "--at", "12.5", "--size",
+                          "1279x719"});
+  require(png.options.output_format == alog2media::OutputFormat::png,
+          ".png selects snapshot output");
+  require(png.options.at && *png.options.at == 12.5,
+          "--at selects the snapshot log time");
+  require(png.options.width == 1279 && png.options.height == 719,
+          "PNG snapshots accept odd dimensions");
+  require(rejects({"alog2media", "mission.alog", "--at", "1"}),
+          "--at requires PNG output");
+  require(rejects({"alog2media", "mission.alog", "-o", "scene.png",
+                   "--start", "1"}),
+          "PNG snapshots reject video interval options");
+  require(rejects({"alog2media", "mission.alog", "-o", "scene.png",
+                   "--fps", "4"}),
+          "PNG snapshots reject video rate options");
+
   const auto help = parse({"alog2media", "--help"});
   require(help.action == alog2media::ParseAction::help,
           "--help does not require an input file");
@@ -80,8 +98,11 @@ int main() {
               "Override automatic pMarineViewer mission discovery") !=
               std::string::npos,
           "help explains that --mission overrides discovery");
+  require(alog2media::helpText().find(".mp4, .gif, or .png") !=
+              std::string::npos,
+          "help documents every output suffix");
   const std::vector<std::string> documented_options = {
-    "--output", "--size", "--fps", "--force", "--start", "--end",
+    "--output", "--size", "--fps", "--force", "--at", "--start", "--end",
     "--duration", "--warp", "--mission", "--map", "--view", "--grid",
     "--labels", "--geometry", "--trails", "--verbose", "--help", "--version"
   };

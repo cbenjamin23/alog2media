@@ -43,6 +43,21 @@ run_render(tiff mp4 map-tiff)
 run_render(tiff gif animation)
 
 execute_process(
+  COMMAND "${ALOG2MEDIA}" "${WORK_DIR}/basic.alog"
+    --map "${WORK_DIR}/basic.tif"
+    --view fit
+    --at 0.5
+    --size 319x179
+    --output "${WORK_DIR}/snapshot.png"
+    --force
+  RESULT_VARIABLE png_result
+  OUTPUT_VARIABLE png_output
+  ERROR_VARIABLE png_error)
+if(NOT png_result EQUAL 0)
+  message(FATAL_ERROR "PNG snapshot render failed:\n${png_output}\n${png_error}")
+endif()
+
+execute_process(
   COMMAND "${FFMPEG}" -v error -i "${WORK_DIR}/map-tif.mp4" -f framemd5 -
   RESULT_VARIABLE tif_decode_result
   OUTPUT_VARIABLE tif_frames
@@ -75,5 +90,22 @@ foreach(expected "codec_name=gif" "width=320" "height=180"
   string(FIND "${probe_output}" "${expected}" found_at)
   if(found_at EQUAL -1)
     message(FATAL_ERROR "GIF metadata lacks '${expected}':\n${probe_output}")
+  endif()
+endforeach()
+
+execute_process(
+  COMMAND "${FFPROBE}" -v error -select_streams v:0
+    -show_entries stream=codec_name,pix_fmt,width,height,nb_frames
+    -of default=noprint_wrappers=1 "${WORK_DIR}/snapshot.png"
+  RESULT_VARIABLE png_probe_result
+  OUTPUT_VARIABLE png_probe_output
+  ERROR_VARIABLE png_probe_error)
+if(NOT png_probe_result EQUAL 0)
+  message(FATAL_ERROR "PNG probe failed: ${png_probe_error}")
+endif()
+foreach(expected "codec_name=png" "pix_fmt=rgb24" "width=319" "height=179")
+  string(FIND "${png_probe_output}" "${expected}" found_at)
+  if(found_at EQUAL -1)
+    message(FATAL_ERROR "PNG metadata lacks '${expected}':\n${png_probe_output}")
   endif()
 endforeach()

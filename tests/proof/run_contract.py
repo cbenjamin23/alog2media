@@ -545,9 +545,11 @@ def run_contract(
         trail_difference, 100, "full trails versus a 0.1-second window"
     )
 
-    # Render the golden subject as a one-frame clip at the exact documented
-    # timestamp. Do not reuse "last" from the animation above: that is t=1.25.
+    # Render the golden subject as both a one-frame H.264 clip and a lossless
+    # PNG snapshot at the exact documented timestamp. Do not reuse "last"
+    # from the animation above: that is t=1.25.
     golden_subject = output_root / "golden subject t0.5.mp4"
+    png_subject = output_root / "golden subject t0.5.png"
     _render(
         executable,
         paths["basic_alog"],
@@ -572,6 +574,28 @@ def run_contract(
         "--trails",
         "off",
     )
+    _render(
+        executable,
+        paths["basic_alog"],
+        None,
+        png_subject,
+        "--map",
+        "none",
+        "--view",
+        "fit",
+        "--at",
+        "0.5",
+        "--geometry",
+        "on",
+        "--grid",
+        "off",
+        "--labels",
+        "off",
+        "--trails",
+        "off",
+    )
+    if not png_subject.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ContractError("snapshot output does not have a PNG signature")
     assert_metadata(
         probe_video(golden_subject, ffprobe),
         codec="h264",
@@ -588,6 +612,29 @@ def run_contract(
     )
     golden_pixels = decode_rgb_image(
         golden_path, mapless_info.width, mapless_info.height, ffmpeg=ffmpeg
+    )
+    png_pixels = decode_rgb_image(
+        png_subject, mapless_info.width, mapless_info.height, ffmpeg=ffmpeg
+    )
+    png_difference = compare_pixels(
+        golden_pixels,
+        png_pixels,
+        mapless_info.width,
+        mapless_info.height,
+        channel_tolerance=8,
+    )
+    if (
+        png_difference.changed_fraction > 0.02
+        or png_difference.mean_absolute_error > 2.0
+    ):
+        raise ContractError(
+            "PNG snapshot golden-frame drift exceeded tolerance: "
+            f"{png_difference}"
+        )
+    print(
+        "PNG proof: exact-time snapshot changed "
+        f"{png_difference.changed_pixels}/{mapless_info.width * mapless_info.height} "
+        f"golden pixels (MAE {png_difference.mean_absolute_error:.6f})"
     )
     golden_difference = compare_pixels(
         golden_pixels,
@@ -838,8 +885,8 @@ def run_contract(
         "unchanged; no _alvtmp cache was created."
     )
     print(
-        "PASS: zero-option defaults, MP4/GIF metadata, .tif/.tiff frame identity, animation, and "
-        "mission geometry precedence are proven."
+        "PASS: zero-option defaults, MP4/GIF metadata, lossless PNG snapshots, "
+        ".tif/.tiff frame identity, animation, and mission geometry precedence are proven."
     )
     print(
         "PASS: the exact-time whole-frame/foreground golden and grid, labels, full/seconds "
