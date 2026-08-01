@@ -25,7 +25,7 @@ shipping that executable or opening a pMarineViewer window.
 
 The first validated local dependency revision was
 `b4a6162b018cde48279659c8b595594990a29086`. That revision records development
-provenance. The supported `v0.1.0` build and CI baseline is official MOOS-IvP
+provenance. The supported `v0.2.0` build and CI baseline is official MOOS-IvP
 commit `174bd7340c33b43e96e1b7eb1ef57aae4df385c9`.
 
 ## FLTK

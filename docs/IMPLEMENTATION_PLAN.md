@@ -237,9 +237,9 @@ The suite has these layers:
 7. real-mission manual acceptance;
 8. no-display platform checks.
 
-## 8. Post-0.1 hardening
+## 8. Post-0.2 hardening
 
-Core headless generation and the `0.1.0` release gates are complete. The next
+Core headless generation and the `0.2.0` release gates are complete. The next
 hardening work should be:
 
 1. broaden fixtures for any upstream `VIEW_*` family not yet represented and
@@ -252,7 +252,7 @@ hardening work should be:
 5. keep the official MOOS-IvP revision pinned in required CI and test newer
    upstream revisions separately before advancing the pin.
 
-The `0.1.0` release requires:
+The `0.2.0` release requires:
 
 - natural-default MP4 and GIF output with correct metadata and animation;
 - mission and fit view coverage, including geometry-aware bounds;
