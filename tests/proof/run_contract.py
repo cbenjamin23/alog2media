@@ -240,9 +240,12 @@ def _prepare_fixtures(
     _copy(fixtures / "geometry_visibility.moos", geometry_mission)
     _command([fixture_map, str(geometry_map)])
 
-    mission_alog = input_root / "mission fallback η.alog"
-    mission_file = input_root / "mission fallback θ.moos"
-    mission_map = input_root / "mission_only.tif"
+    mission_root = input_root / "mission fallback η"
+    mission_xlog = mission_root / "XLOG_SHORESIDE_01"
+    mission_xlog.mkdir(parents=True)
+    mission_alog = mission_xlog / "LOG_SHORESIDE_01.alog"
+    mission_file = mission_root / "targ_shoreside.moos"
+    mission_map = mission_root / "mission_only.tif"
     mission_info = mission_map.with_suffix(".info")
     _copy(fixtures / "mission_fallback.alog", mission_alog)
     _copy(fixtures / "mission_fallback.moos", mission_file)
@@ -258,7 +261,6 @@ def _prepare_fixtures(
         "geometry_map": geometry_map,
         "geometry_mission": geometry_mission,
         "mission_alog": mission_alog,
-        "mission_file": mission_file,
         "mission_map": mission_map,
     }
 
@@ -712,8 +714,9 @@ def run_contract(
         geometry_difference.height,
     )
 
-    # With no REGION_INFO, the mission supplies map, datum, partial camera,
-    # and natural visual defaults. Exercise each import and its CLI override.
+    # With no REGION_INFO, automatically discover parent targ_shoreside.moos.
+    # It supplies map, datum, partial camera, and natural visual defaults.
+    # Exercise each import and its CLI override.
     mission_auto = output_root / "mission fallback auto.mp4"
     mission_mapless = output_root / "mission fallback mapless.mp4"
     mission_grid_off = output_root / "mission fallback grid off.mp4"
@@ -721,8 +724,6 @@ def run_contract(
     mission_trails_full = output_root / "mission fallback trails full.mp4"
     mission_fit = output_root / "mission fallback fit.mp4"
     mission_common = (
-        "--mission",
-        str(paths["mission_file"]),
         "--start",
         "0",
         "--duration",

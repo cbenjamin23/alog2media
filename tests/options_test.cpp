@@ -76,6 +76,10 @@ int main() {
   require(alog2media::helpText().find("--trails auto|off|full|SECONDS") !=
               std::string::npos,
           "help documents every trail mode");
+  require(alog2media::helpText().find(
+              "Override automatic pMarineViewer mission discovery") !=
+              std::string::npos,
+          "help explains that --mission overrides discovery");
   const std::vector<std::string> documented_options = {
     "--output", "--size", "--fps", "--force", "--start", "--end",
     "--duration", "--warp", "--mission", "--map", "--view", "--grid",

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <string>
 
@@ -19,6 +20,40 @@ void require(bool condition, const std::string& message) {
 bool loadThrows(const std::filesystem::path& path) {
   try {
     alog2media::MissionConfig::load(path);
+    return false;
+  } catch(const std::runtime_error&) {
+    return true;
+  }
+}
+
+class TemporaryTree {
+ public:
+  TemporaryTree() {
+    std::random_device random;
+    for(int attempt = 0; attempt < 64; ++attempt) {
+      path_ = std::filesystem::temp_directory_path() /
+              ("alog2media-mission-test-" + std::to_string(random()));
+      std::error_code error;
+      if(std::filesystem::create_directory(path_, error))
+        return;
+    }
+    throw std::runtime_error("could not create mission discovery test directory");
+  }
+
+  ~TemporaryTree() {
+    std::error_code ignored;
+    std::filesystem::remove_all(path_, ignored);
+  }
+
+  const std::filesystem::path& path() const { return path_; }
+
+ private:
+  std::filesystem::path path_;
+};
+
+bool discoveryThrows(const std::filesystem::path& log) {
+  try {
+    (void)alog2media::discoverMissionForLog(log);
     return false;
   } catch(const std::runtime_error&) {
     return true;
@@ -61,6 +96,40 @@ int main(int argc, char* argv[]) {
   require(!config.last("not_present"), "last() reports missing parameters");
   require(loadThrows(fixture.parent_path() / "does-not-exist.moos"),
           "an unreadable mission file is rejected");
+
+  TemporaryTree tree;
+  const std::filesystem::path xlog = tree.path() / "XLOG_SHORESIDE_01";
+  std::filesystem::create_directory(xlog);
+  const std::filesystem::path log = xlog / "LOG_SHORESIDE_01.alog";
+  const std::filesystem::path conventional =
+      tree.path() / "targ_shoreside.moos";
+  std::filesystem::copy_file(fixture, conventional);
+
+  const auto discovered = alog2media::discoverMissionForLog(log);
+  require(discovered && std::filesystem::equivalent(*discovered, conventional),
+          "a parent targ_shoreside.moos is discovered from an XLOG path");
+  const auto relative_discovered = alog2media::discoverMissionForLog(
+      std::filesystem::relative(log, std::filesystem::current_path()));
+  require(relative_discovered &&
+              std::filesystem::equivalent(*relative_discovered, conventional),
+          "relative XLOG input still searches its absolute parent mission");
+
+  std::filesystem::remove(conventional);
+  const std::filesystem::path generic = tree.path() / "viewer.moos";
+  std::filesystem::copy_file(fixture, generic);
+  const auto sole_mission = alog2media::discoverMissionForLog(log);
+  require(sole_mission && std::filesystem::equivalent(*sole_mission, generic),
+          "one generic pMarineViewer mission is an unambiguous fallback");
+
+  const std::filesystem::path competing = xlog / "other.moos";
+  std::filesystem::copy_file(fixture, competing);
+  require(discoveryThrows(log),
+          "multiple generic pMarineViewer missions require --mission");
+
+  std::filesystem::copy_file(fixture, conventional);
+  const auto preferred = alog2media::discoverMissionForLog(log);
+  require(preferred && std::filesystem::equivalent(*preferred, conventional),
+          "targ_shoreside.moos wins over generic candidates");
 
   std::cout << "mission config tests passed\n";
   return 0;

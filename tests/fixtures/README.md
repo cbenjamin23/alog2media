@@ -17,10 +17,11 @@ fidelity test. The test compiles upstream `PMV_Viewer.cpp`, feeds it the same
 synthetic scene state, and compares its frames with `alog2media`; it never
 opens a GUI window or runs an FLTK event loop.
 
-`mission_fallback.alog` and `.moos` exercise end-to-end mission fallback when
-the log has no `REGION_INFO`: a `TIFF_FILE_B`-only map, mission datum for a
-LAT/LON report, a partial zoom-only camera, and mission-controlled grid,
-labels, and trails.
+`mission_fallback.alog` and `.moos` exercise end-to-end automatic mission
+discovery when the log has no `REGION_INFO`. The proof runner installs them as
+`mission/targ_shoreside.moos` and `mission/XLOG.../LOG....alog`; the mission
+supplies a `TIFF_FILE_B`-only map, datum for a LAT/LON report, partial
+zoom-only camera, and mission-controlled grid, labels, and trails.
 
 The `fixture_map` test helper generates a deterministic 128×128 TIFF during the
 test. The integration test exposes the same bytes under `.tif` and `.tiff`,
