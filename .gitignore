@@ -1,0 +1,6 @@
+/build/
+/out/
+/*.mp4
+/*.gif
+*.alog_alvtmp/
+.DS_Store
