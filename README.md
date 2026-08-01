@@ -15,7 +15,7 @@ The log is always the first argument. The zero-option form writes
 `./mission.mp4`; the output suffix selects MP4, GIF, or PNG. Run
 `alog2media -h` for the complete, coherent option reference.
 
-The current release is `v0.3.0`. It is a native C++/CMake source package. The
+The current release is `v0.3.1`. It is a native C++/CMake package. The
 supported dependency baseline is official MOOS-IvP commit
 `174bd7340c33b43e96e1b7eb1ef57aae4df385c9`; CI validates macOS and
 displayless Linux against that revision.
@@ -79,7 +79,32 @@ future positions. `--view fit` considers vehicles and supported geometry
 active during the requested interval. PNG output contains exactly one
 lossless frame; it uses `--at` rather than video interval, FPS, or warp options.
 
-## Build and install
+## Install
+
+Install with Homebrew on macOS or Linux:
+
+```bash
+brew install cbenjamin23/tap/alog2media
+```
+
+Ubuntu 22.04 and 24.04 packages are published for amd64 and arm64 through a
+signed APT repository:
+
+```bash
+curl -fsSL https://cbenjamin23.github.io/alog2media/apt/alog2media-archive-keyring.gpg \
+  | sudo tee /usr/share/keyrings/alog2media-archive-keyring.gpg >/dev/null
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/alog2media-archive-keyring.gpg] https://cbenjamin23.github.io/alog2media/apt ${VERSION_CODENAME} main" \
+  | sudo tee /etc/apt/sources.list.d/alog2media.list
+sudo apt update
+sudo apt install alog2media
+```
+
+The Homebrew formula currently builds from source. APT installs a native
+binary package. Both install FFmpeg and the required runtime libraries through
+their package manager; neither requires a MOOS-IvP checkout at runtime.
+
+### Build from source
 
 Build requirements are CMake 3.20+, a C++17 compiler, and a configured, built
 MOOS-IvP checkout. FLTK, FreeType, libtiff, and OpenGL are also required;
@@ -89,7 +114,7 @@ produce MP4.
 Clone the release and supported MOOS-IvP revision:
 
 ```bash
-git clone --branch v0.3.0 https://github.com/cbenjamin23/alog2media.git
+git clone --branch v0.3.1 https://github.com/cbenjamin23/alog2media.git
 git clone https://github.com/moos-ivp/moos-ivp.git
 git -C moos-ivp checkout 174bd7340c33b43e96e1b7eb1ef57aae4df385c9
 cd moos-ivp
@@ -116,7 +141,6 @@ installed executable contains the statically linked IvP viewer code and ships
 its linked MOOSGeodesy shared library with a relative runtime search path.
 Runtime still needs its platform graphics libraries, FLTK, FreeType, libtiff,
 a bold sans-serif system font, FFmpeg, and any map files referenced by a log.
-A Homebrew formula is not part of this release.
 
 ## Safety and verification
 
