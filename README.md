@@ -33,16 +33,19 @@ composes them in pMarineViewer order:
 
 The default is the normal mission viewport from logged `REGION_INFO`, with the
 coordinate grid off, labels and logged geometry on, and the normal recent
-trail. Supplying `--mission FILE.moos` also imports supported settings from
-`ProcessConfig = pMarineViewer`, including map visibility, pan/zoom fallback,
-vehicle styling, trails, and per-family geometry visibility.
+trail. When `REGION_INFO` is absent, alog2media automatically looks beside the
+log and in its parent mission directory for `targ_shoreside.moos` or one
+unambiguous pMarineViewer mission. Supplying `--mission FILE.moos` overrides
+discovery. Mission import includes map visibility, pan/zoom fallback, vehicle
+styling, trails, and per-family geometry visibility.
 
 Configuration precedence is:
 
 1. explicit CLI overrides;
 2. the logged `REGION_INFO` map, datum, pan, and zoom;
-3. supported visual settings from `--mission`, with its map, datum, and
-   launch camera used when log context is missing;
+3. supported visual settings from an automatically discovered or explicit
+   mission, with its map, datum, and launch camera used when log context is
+   missing;
 4. pMarineViewer-compatible defaults.
 
 The output intentionally excludes menus, controls, cursors, log plots, window
@@ -51,7 +54,7 @@ chrome, and alogview's yellow pan/zoom footer.
 ## Scene options
 
 ```text
---mission FILE.moos        Import the pMarineViewer launch configuration.
+--mission FILE.moos        Override automatic pMarineViewer mission discovery.
 --map FILE.tif|FILE.tiff   Override the logged/configured map.
 --map none                 Render a mapless local-coordinate scene.
 --view mission|fit         Use the configured viewport or fit tracks/geometry.
@@ -130,7 +133,9 @@ contain spaces and Unicode. It verifies SHA-256/mode/tree identity, absence of
 `_alvtmp`, MP4/GIF metadata, animation, exact `.tif`/`.tiff` decoded-frame
 identity, a tolerant golden frame, mission/CLI precedence, and independent
 grid, labels, geometry, trail, and mapless effects. It also runs the exact
-zero-option command and a no-`REGION_INFO` mission fallback case.
+zero-option command and a no-`REGION_INFO` case that discovers
+`mission/XLOG.../LOG....alog`'s parent `targ_shoreside.moos` without an
+explicit mission option.
 
 ```bash
 ./scripts/build.sh -DMOOS_IVP_ROOT=../moos-ivp

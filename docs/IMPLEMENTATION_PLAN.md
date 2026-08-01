@@ -8,7 +8,7 @@ The first three product milestones are implemented:
 | --- | --- | --- |
 | Fidelity proofs | Implemented | C++ unit/integration tests, decoded-media contracts, a tolerant golden, and direct offscreen parity against upstream `PMV_Viewer.cpp` |
 | Read-only raw-log input | Implemented | Direct `.alog` parsing through `std::ifstream`; no `SplitHandler`, alogview cache, or `<input>_alvtmp` |
-| Mission-aware scene | Implemented | `--mission`, tri-state visual options, geometry replay/lifetimes, mapless mode, and geometry-aware fit |
+| Mission-aware scene | Implemented | automatic XLOG-parent discovery, `--mission` override, tri-state visual options, geometry replay/lifetimes, mapless mode, and geometry-aware fit |
 | macOS headless rendering | Implemented | CGL framebuffer, no shown window, no FLTK event loop |
 | Linux headless rendering | Implemented for EGL | Surfaceless EGL succeeds with `DISPLAY` and `WAYLAND_DISPLAY` unset |
 | Renderer extraction | Partially complete | Rendering is isolated behind `HeadlessSceneViewer`, but it still derives from `MarineViewer` as a state holder |
@@ -60,8 +60,9 @@ that was never logged. The renderer applies configuration in this order:
 
 1. explicit CLI overrides;
 2. logged `REGION_INFO` map, datum, pan, and zoom;
-3. supported `ProcessConfig = pMarineViewer` settings from `--mission` when
-   log context does not supply the corresponding value;
+3. supported `ProcessConfig = pMarineViewer` settings from an automatically
+   discovered or explicit mission when log context does not supply the
+   corresponding value;
 4. pMarineViewer-compatible alog2media defaults.
 
 Natural defaults are the mission viewport, grid off, labels on, logged
@@ -73,7 +74,7 @@ families when the matching CLI option remains `auto`.
 The principal scene options are:
 
 ```text
---mission FILE.moos        Import supported pMarineViewer launch settings.
+--mission FILE.moos        Override automatic pMarineViewer mission discovery.
 --map FILE.tif|FILE.tiff   Override the logged/configured map.
 --map none                 Render a mapless local-coordinate scene.
 --view mission|fit         Use configured pan/zoom or fit tracks and geometry.
@@ -188,7 +189,8 @@ Implemented:
 
 Implemented:
 
-- `--mission FILE.moos` and supported pMarineViewer launch settings;
+- automatic `targ_shoreside.moos` discovery for normal XLOG layouts, with
+  `--mission FILE.moos` as an explicit override;
 - tri-state `auto|on|off` controls for grid, labels, and geometry;
 - `auto|off|full|SECONDS` trail policies;
 - CLI override precedence over mission visibility settings;

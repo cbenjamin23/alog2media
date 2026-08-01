@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Automatically discover `targ_shoreside.moos` or one unambiguous
+  pMarineViewer mission when a log has no `REGION_INFO`; retain `--mission` as
+  the explicit override.
+
 ## 0.1.0 - 2026-07-31
 
 Initial public release.

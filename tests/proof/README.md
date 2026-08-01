@@ -45,7 +45,9 @@ Media checks use FFprobe JSON plus decoded RGB24 frames. They assert:
   `--geometry auto` pixel-identical to forced-off geometry (including camera
   bounds), while `--geometry on` overrides it and produces a large pixel
   difference;
-- without `REGION_INFO`, a mission-only datum, `TIFF_FILE_B` map, partial
+- without `REGION_INFO` or `--mission`, the normal
+  `mission/XLOG.../LOG....alog` layout discovers its parent
+  `targ_shoreside.moos`; its mission-only datum, `TIFF_FILE_B` map, partial
   zoom-only camera, grid, labels, and trails all affect the render, and their
   corresponding CLI overrides win independently.
 

@@ -38,6 +38,25 @@ env -u DISPLAY -u WAYLAND_DISPLAY \
     --require-headless-env
 ```
 
+## 2026-08-01 — automatic mission discovery
+
+The nine CTest targets and the complete decoded-media product contract pass
+after adding bounded mission discovery. The no-`REGION_INFO` contract fixture
+uses this ordinary launch layout:
+
+```text
+mission/
+├── targ_shoreside.moos
+└── XLOG_SHORESIDE_01/
+    └── LOG_SHORESIDE_01.alog
+```
+
+The render command omits `--mission`. It discovers the parent mission, resolves
+its `TIFF_FILE_B` map and datum, preserves its partial launch camera, and
+honors its grid, label, and trail settings. Unit coverage also proves relative
+input paths, a single generically named pMarineViewer mission, conventional
+filename preference, and rejection of ambiguous generic candidates.
+
 ## 2026-07-31 — macOS Apple Silicon
 
 Environment:
