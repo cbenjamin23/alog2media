@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -17,8 +18,10 @@ struct RenderMetadata {
   double end = 0;
   std::string map;
   std::string backend;
+  std::optional<std::string> mission;
   bool used_region_info = false;
   bool used_mission = false;
+  bool discovered_mission = false;
   bool fit_view = false;
   std::size_t vehicle_count = 0;
   std::size_t geometry_event_count = 0;

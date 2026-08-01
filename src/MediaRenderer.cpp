@@ -174,11 +174,20 @@ class MediaRenderer::Impl {
       : options_(options), timeline_(ALogTimeline::load(options.input)) {
     ScopedCoutSilence silence(!options.verbose);
 
-    if(options.mission) {
-      if(!std::filesystem::is_regular_file(*options.mission))
+    std::optional<std::filesystem::path> mission_path = options.mission;
+    if(!mission_path && timeline_.regionInfo().empty()) {
+      mission_path = discoverMissionForLog(options.input);
+      metadata_.discovered_mission = mission_path.has_value();
+    }
+    if(mission_path) {
+      if(!std::filesystem::is_regular_file(*mission_path))
         throw std::runtime_error("mission file does not exist or is not a regular file");
-      mission_ = MissionConfig::load(*options.mission);
+      mission_ = MissionConfig::load(*mission_path);
+      metadata_.mission = mission_->source().string();
       metadata_.used_mission = true;
+      if(metadata_.discovered_mission && options.verbose)
+        std::cerr << "discovered pMarineViewer mission: "
+                  << mission_->source() << "\n";
       if(mission_->latOrigin() && mission_->longOrigin())
         timeline_.crossFillLatLon(*mission_->latOrigin(),
                                   *mission_->longOrigin());

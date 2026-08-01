@@ -256,7 +256,9 @@ Time:
   --warp FACTOR              Log seconds per output second. Default: 1
 
 Scene:
-  --mission FILE.moos        Import supported pMarineViewer launch settings.
+  --mission FILE.moos        Override automatic pMarineViewer mission discovery.
+                             Without REGION_INFO, searches beside INPUT.alog
+                             and in its parent mission directory.
   --map FILE.tif|FILE.tiff   Override the configured TIFF map; matching .info
                              metadata is required. Use '--map none' for a
                              mapless local-coordinate scene.

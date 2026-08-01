@@ -40,6 +40,12 @@ int run(const alog2media::Options& options) {
             << " (" << options.warp << "x warp)\n"
             << "  scene:    " << metadata.map << " via " << metadata.backend << "\n"
             << "  output:   " << options.output << "\n";
+  if(metadata.mission) {
+    std::cout << "  mission:  " << *metadata.mission;
+    if(metadata.discovered_mission)
+      std::cout << " (discovered)";
+    std::cout << "\n";
+  }
 
   alog2media::FfmpegEncoder encoder(
       options.output, options.width, options.height, options.fps, options.force);

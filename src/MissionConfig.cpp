@@ -9,7 +9,9 @@
 #include <algorithm>
 #include <cctype>
 #include <list>
+#include <sstream>
 #include <stdexcept>
+#include <system_error>
 
 namespace alog2media {
 namespace {
@@ -28,6 +30,34 @@ bool equalIgnoringCase(std::string_view left, std::string_view right) {
                     [](unsigned char a, unsigned char b) {
                       return std::tolower(a) == std::tolower(b);
                     });
+}
+
+std::filesystem::path normalized(const std::filesystem::path& path) {
+  std::error_code error;
+  const std::filesystem::path canonical =
+      std::filesystem::weakly_canonical(path, error);
+  return error ? std::filesystem::absolute(path) : canonical;
+}
+
+bool isMoosFile(const std::filesystem::directory_entry& entry) {
+  std::error_code error;
+  if(!entry.is_regular_file(error) || error)
+    return false;
+  std::string extension = entry.path().extension().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char character) {
+                   return static_cast<char>(std::tolower(character));
+                 });
+  return extension == ".moos";
+}
+
+bool hasMarineViewerConfig(const std::filesystem::path& path) {
+  try {
+    (void)MissionConfig::load(path);
+    return true;
+  } catch(const std::runtime_error&) {
+    return false;
+  }
 }
 
 }  // namespace
@@ -79,6 +109,64 @@ std::optional<std::string> MissionConfig::last(std::string_view name) const {
       return param->value;
   }
   return std::nullopt;
+}
+
+std::optional<std::filesystem::path> discoverMissionForLog(
+    const std::filesystem::path& log) {
+  std::vector<std::filesystem::path> directories;
+  const std::filesystem::path adjacent = normalized(log).parent_path();
+  directories.push_back(adjacent);
+  const std::filesystem::path parent = adjacent.parent_path();
+  if(!parent.empty() && normalized(parent) != normalized(adjacent))
+    directories.push_back(parent);
+
+  // A generated shoreside target has an unambiguous role, so prefer the
+  // closest conventional filename before considering generic .moos files.
+  for(const std::filesystem::path& directory : directories) {
+    const std::filesystem::path candidate =
+        directory / "targ_shoreside.moos";
+    std::error_code error;
+    if(std::filesystem::is_regular_file(candidate, error) && !error) {
+      if(!hasMarineViewerConfig(candidate)) {
+        throw std::runtime_error(
+            "automatic mission candidate '" + candidate.string() +
+            "' has no usable ProcessConfig = pMarineViewer block; pass "
+            "--mission with the intended file");
+      }
+      return normalized(candidate);
+    }
+  }
+
+  std::vector<std::filesystem::path> candidates;
+  for(const std::filesystem::path& directory : directories) {
+    std::error_code error;
+    std::filesystem::directory_iterator entries(directory, error);
+    if(error)
+      continue;
+    for(const std::filesystem::directory_entry& entry : entries) {
+      if(!isMoosFile(entry) || !hasMarineViewerConfig(entry.path()))
+        continue;
+      const std::filesystem::path candidate = normalized(entry.path());
+      if(std::find(candidates.begin(), candidates.end(), candidate) ==
+         candidates.end()) {
+        candidates.push_back(candidate);
+      }
+    }
+  }
+
+  if(candidates.empty())
+    return std::nullopt;
+  if(candidates.size() == 1)
+    return candidates.front();
+
+  std::sort(candidates.begin(), candidates.end());
+  std::ostringstream message;
+  message << "multiple pMarineViewer missions were found near '"
+          << log.string() << "':";
+  for(const std::filesystem::path& candidate : candidates)
+    message << "\n  " << candidate.string();
+  message << "\npass --mission with the intended file";
+  throw std::runtime_error(message.str());
 }
 
 }  // namespace alog2media
