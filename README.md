@@ -1,101 +1,92 @@
 # alog2media
 
-`alog2media` renders the pMarineViewer navigation scene from a MOOS-IvP
-`.alog` directly to MP4 or GIF. It does not record the desktop, create a
-visible window, or include alogview controls in the output.
+`alog2media` turns a MOOS-IvP `.alog` into the pMarineViewer scene as an MP4
+or animated GIF. It renders offscreen: no desktop recording, visible window,
+alogview controls, or yellow camera footer.
 
 ```bash
 alog2media mission.alog
-alog2media mission.alog --mission mission.moos
-alog2media mission.alog -o clip.gif --start 20 --duration 30 --warp 4
-alog2media mission.alog --map harbor.tiff --view fit --trails full
+alog2media mission.alog -o mission.gif
+alog2media mission.alog -o excerpt.mp4 --start 20 --duration 30 --warp 4
 ```
 
-The `.alog` is always the first argument. With no other arguments, output is
-`./mission.mp4`. Run `alog2media -h` for the complete option reference.
+The log is always the first argument. The zero-option form writes
+`./mission.mp4`; the output suffix selects MP4 or GIF. Run `alog2media -h` for
+the complete, coherent option reference.
 
-The current release is `v0.1.0`. It is a native C++/CMake source package, not
-a Python package or prebuilt application bundle. The supported dependency
-baseline is official MOOS-IvP commit
-`174bd7340c33b43e96e1b7eb1ef57aae4df385c9`; macOS and displayless Linux are
-validated against that exact revision in CI.
+The current release is `v0.2.0`. It is a native C++/CMake source package. The
+supported dependency baseline is official MOOS-IvP commit
+`174bd7340c33b43e96e1b7eb1ef57aae4df385c9`; CI validates macOS and
+displayless Linux against that revision.
 
-## What it reproduces
+## Natural mission rendering
 
-The renderer uses MOOS-IvP's map, vehicle, and geometry drawing primitives and
-composes them in pMarineViewer order:
+By default, alog2media reproduces the mission's configured startup scene:
 
-1. TIFF map (or a mapless coordinate plane)
-2. optional coordinate hash/grid
+1. TIFF map, or a mapless coordinate plane
+2. optional coordinate grid
 3. active logged `VIEW_*` geometry, operation area, datum, and drop points
 4. vehicle trails
 5. vehicle bodies and names
 
-The default is the normal mission viewport from logged `REGION_INFO`, with the
-coordinate grid off, labels and logged geometry on, and the normal recent
-trail. alog2media automatically looks beside the log and in its parent mission
-directory for `targ_shoreside.moos`, importing its launch-time visual settings
-while retaining logged camera precedence. When `REGION_INFO` is absent, one
-unambiguous generically named pMarineViewer mission is also accepted.
-Supplying `--mission FILE.moos` overrides discovery. Mission import includes
-map visibility, pan/zoom fallback, vehicle styling, trails, and per-family
-geometry visibility.
-
-Configuration precedence is:
-
-1. explicit CLI overrides;
-2. the logged `REGION_INFO` map, datum, pan, and zoom;
-3. supported visual settings from an automatically discovered or explicit
-   mission, with its map, datum, and launch camera used when log context is
-   missing;
-4. pMarineViewer-compatible defaults.
-
-The output intentionally excludes menus, controls, cursors, log plots, window
-chrome, and alogview's yellow pan/zoom footer.
-
-## Scene options
+It uses the map and startup camera recorded in `REGION_INFO`. It also searches
+beside the log and in its parent mission directory for the ordinary
+`targ_shoreside.moos`, importing launch-time visibility, vehicle, trail, and
+geometry settings. This makes the normal layout work without `--mission`:
 
 ```text
---mission FILE.moos        Override automatic pMarineViewer mission discovery.
---map FILE.tif|FILE.tiff   Override the logged/configured map.
---map none                 Render a mapless local-coordinate scene.
---view mission|fit         Use the configured viewport or fit tracks/geometry.
---grid auto|on|off         Follow mission config or override the hash grid.
---labels auto|on|off       Follow mission config or override scene labels.
---geometry auto|on|off     Follow mission config or override logged geometry.
---trails auto|off|full|S   Configured recent trail, none, full, or S seconds.
+mission/
+├── targ_shoreside.moos
+└── XLOG_SHORESIDE.../
+    └── LOG_SHORESIDE....alog
+```
+
+Configuration precedence is explicit CLI options, logged `REGION_INFO`,
+discovered or explicit mission settings, then pMarineViewer-compatible
+defaults. Use `--mission FILE.moos` only to override discovery or supply a
+mission stored elsewhere.
+
+An `.alog` cannot recover a camera or visibility change made interactively
+after launch unless that change was logged. `--view mission` is therefore the
+default; `--view fit` deliberately computes a new camera around tracks and
+supported geometry.
+
+## Useful options
+
+```text
+-o, --output FILE         Output .mp4 or .gif path.
+--start SECONDS           First log time to render.
+--duration SECONDS        Log-time duration to render.
+--warp FACTOR             Log seconds per output second.
+--fps FPS                 Output frames per second.
+--size WIDTHxHEIGHT       Output dimensions; default 1280x720.
+--mission FILE.moos       Override automatic mission discovery.
+--map FILE.tif|FILE.tiff  Override the logged/configured map.
+--map none                Render without a TIFF map.
+--view mission|fit        Use the startup view or fit scene content.
+--grid auto|on|off        Follow mission config or override the grid.
+--labels auto|on|off      Follow mission config or override labels.
+--geometry auto|on|off    Follow mission config or override geometry.
+--trails auto|off|full|S  Configured, none, full, or S recent seconds.
+--force                   Replace an existing output file.
 ```
 
 Both `.tif` and `.tiff` maps are accepted and require a same-basename `.info`
-file. `--trails full` includes history only through the current frame—never
-future positions. `--view fit` includes vehicle tracks and supported geometry
-active during the requested output interval.
+file. `--trails full` includes history only through the current frame, never
+future positions. `--view fit` considers vehicles and supported geometry
+active during the requested interval.
 
-## Architecture and input safety
+## Build and install
 
-The executable parses the original `.alog` through a read-only `std::ifstream`.
-It does not invoke alogview's `SplitHandler`, write indexes beside the log, or
-create `<input>_alvtmp`. Paths with spaces, Unicode, and shell punctuation are
-passed as process arguments, never interpolated into shell commands.
+Build requirements are CMake 3.20+, a C++17 compiler, and a configured, built
+MOOS-IvP checkout. FLTK, FreeType, libtiff, and OpenGL are also required;
+Linux additionally uses EGL. FFmpeg with `libx264` support is required to
+produce MP4.
 
-macOS renders into a CGL framebuffer. Linux uses a surfaceless EGL framebuffer
-and runs with `DISPLAY` and `WAYLAND_DISPLAY` absent. FFmpeg receives RGB frames
-through stdin and encodes H.264/yuv420p MP4 or an animated GIF.
-
-## Dependencies
-
-- CMake 3.20 or newer and a C++17 compiler
-- a configured and built MOOS-IvP source checkout
-- FLTK, OpenGL/EGL or macOS OpenGL, libtiff, and FreeType
-- a bold sans-serif font (DejaVu Sans Bold is used in Linux CI)
-- FFmpeg on `PATH`, including `libx264` for MP4
-
-## Build
-
-Clone the release and the supported MOOS-IvP revision:
+Clone the release and supported MOOS-IvP revision:
 
 ```bash
-git clone --branch v0.1.0 https://github.com/cbenjamin23/alog2media.git
+git clone --branch v0.2.0 https://github.com/cbenjamin23/alog2media.git
 git clone https://github.com/moos-ivp/moos-ivp.git
 git -C moos-ivp checkout 174bd7340c33b43e96e1b7eb1ef57aae4df385c9
 cd moos-ivp
@@ -104,7 +95,7 @@ cd ../alog2media
 ./scripts/build.sh
 ```
 
-If the checkouts are not siblings, provide the dependency path explicitly:
+If the repositories are not siblings, specify the dependency:
 
 ```bash
 ./scripts/build.sh -DMOOS_IVP_ROOT=/path/to/moos-ivp
@@ -117,30 +108,27 @@ cmake --install build --prefix "$HOME/.local"
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-The install tree includes the linked MOOSGeodesy shared library and uses a
-relative runtime search path; CTest verifies that the installed executable
-starts outside the build tree. `v0.1.0` is distributed as source plus example
-media on GitHub Releases. A one-command Homebrew formula is planned next but
-is not part of this release.
+MOOS-IvP is needed while building, not as a source checkout at runtime. The
+installed executable contains the statically linked IvP viewer code and ships
+its linked MOOSGeodesy shared library with a relative runtime search path.
+Runtime still needs its platform graphics libraries, FLTK, FreeType, libtiff,
+a bold sans-serif system font, FFmpeg, and any map files referenced by a log.
+A Homebrew formula is not part of this release.
 
-## Reproducible proof suite
+## Safety and verification
 
-The C++ tests cover option parsing, raw timeline semantics, same-time ordering,
-LAT/LON conversion, geometry lifecycle/replacement/expiry, mission parsing,
-end-to-end media generation, and a direct scene comparison against upstream
-`PMV_Viewer.cpp` rendered in a separate offscreen reference path.
+The input log is read directly through `std::ifstream`. alog2media does not run
+alogview's splitting/indexing path, write beside the log, or create an
+`_alvtmp` directory. Input paths with spaces, Unicode, and shell punctuation
+are passed as process arguments rather than interpolated into shell commands.
 
-The product contract then renders from a read-only directory whose filenames
-contain spaces and Unicode. It verifies SHA-256/mode/tree identity, absence of
-`_alvtmp`, MP4/GIF metadata, animation, exact `.tif`/`.tiff` decoded-frame
-identity, a tolerant golden frame, mission/CLI precedence, and independent
-grid, labels, geometry, trail, and mapless effects. It also runs the exact
-zero-option command and a no-`REGION_INFO` case that discovers
-`mission/XLOG.../LOG....alog`'s parent `targ_shoreside.moos` without an
-explicit mission option.
+macOS renders into a CGL framebuffer. Linux uses surfaceless EGL and is tested
+with `DISPLAY` and `WAYLAND_DISPLAY` unset. To run the same proof suite:
 
 ```bash
 ./scripts/build.sh -DMOOS_IVP_ROOT=../moos-ivp
+ctest --test-dir build --output-on-failure
+python3 -m unittest discover -s tests/proof -p 'test_*.py'
 
 env -u DISPLAY -u WAYLAND_DISPLAY \
   LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless \
@@ -150,26 +138,26 @@ env -u DISPLAY -u WAYLAND_DISPLAY \
     --require-headless-env
 ```
 
-GitHub Actions repeats this on macOS 14/CGL and Ubuntu 24.04/surfaceless EGL
-against the pinned official MOOS-IvP revision. See
-[validation](docs/VALIDATION.md) for exact recorded results and
-[the implementation plan](docs/IMPLEMENTATION_PLAN.md) for post-release
-hardening work.
+Tests cover parsing and timeline order, map and mission resolution, geometry
+lifecycle, option precedence, input immutability, MP4/GIF metadata, and direct
+frame comparison with an independently built upstream `PMV_Viewer.cpp`
+reference. GitHub Actions repeats the suite on macOS 14/CGL and Ubuntu
+24.04/surfaceless EGL.
 
-## Fidelity boundaries
+See [the validation record](docs/VALIDATION.md) for exact results and real
+mission examples, and [the implementation plan](docs/IMPLEMENTATION_PLAN.md)
+for remaining hardening work.
 
-An `.alog` cannot reconstruct an interactive pan, zoom, or visibility change
-that was never logged. `REGION_INFO` normally captures the startup viewport;
-provide the original `.moos` and map pair for the closest launch-equivalent
-scene. One input log is currently rendered at a time, and message community is
-inferred where the alog format no longer retains it. Font antialiasing may vary
-slightly across platforms, so cross-platform golden checks use tolerances.
+## Current limits
 
-The current headless compositor still derives from `MarineViewer`'s
-`Fl_Gl_Window` state holder, although it constructs no native window and never
-runs the FLTK event loop. Removing that inheritance and adding an OSMesa
-fallback remain hardening work; neither is required for the tested CGL/EGL
-headless paths.
+- One `.alog` is rendered at a time.
+- Unlogged interactive pan, zoom, and visibility changes are unrecoverable.
+- Output is MP4 or animated GIF; additional containers/codecs are not yet a
+  supported interface.
+- Source community is inferred where the alog format does not retain it.
+- Fonts are system-provided, so antialiasing may differ slightly by platform.
+- The current state holder still inherits `Fl_Gl_Window`, but constructs no
+  native window and never enters the FLTK event loop.
 
 ## License
 
