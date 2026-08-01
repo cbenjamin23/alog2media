@@ -196,10 +196,15 @@ class MediaRenderer::Impl {
 
     metadata_.log_min = timeline_.minTime();
     metadata_.log_max = timeline_.maxTime();
-    metadata_.start = options.start.value_or(metadata_.log_min);
-    metadata_.end = options.end.value_or(metadata_.log_max);
-    if(options.duration)
-      metadata_.end = metadata_.start + *options.duration;
+    if(options.output_format == OutputFormat::png) {
+      metadata_.start = options.at.value_or(metadata_.log_min);
+      metadata_.end = metadata_.start;
+    } else {
+      metadata_.start = options.start.value_or(metadata_.log_min);
+      metadata_.end = options.end.value_or(metadata_.log_max);
+      if(options.duration)
+        metadata_.end = metadata_.start + *options.duration;
+    }
 
     if(metadata_.start < metadata_.log_min ||
        metadata_.start > metadata_.log_max) {
@@ -209,7 +214,8 @@ class MediaRenderer::Impl {
       throw std::runtime_error(
           "the requested end time is outside the log's available time range");
     }
-    if(metadata_.end <= metadata_.start)
+    if(options.output_format != OutputFormat::png &&
+       metadata_.end <= metadata_.start)
       throw std::runtime_error(
           "the requested end time must be later than the start time");
 

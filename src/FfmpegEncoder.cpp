@@ -45,12 +45,18 @@ std::vector<std::string> ffmpegArguments(const std::filesystem::path& output,
       "-c:v", "libx264", "-preset", "medium", "-crf", "20",
       "-pix_fmt", "yuv420p", "-movflags", "+faststart"
     });
-  } else {
+  } else if(extension == ".gif") {
     arguments.insert(arguments.end(), {
       "-filter_complex",
       "[0:v]split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
       "-loop", "0"
     });
+  } else if(extension == ".png") {
+    arguments.insert(arguments.end(), {
+      "-frames:v", "1", "-c:v", "png"
+    });
+  } else {
+    throw std::runtime_error("unsupported FFmpeg output extension: " + extension);
   }
 
   arguments.push_back(output.string());

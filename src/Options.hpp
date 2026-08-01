@@ -8,6 +8,7 @@
 namespace alog2media {
 
 enum class ParseAction { run, help, version };
+enum class OutputFormat { mp4, gif, png };
 enum class ViewMode { mission, fit };
 enum class MapMode { automatic, file, none };
 enum class ToggleMode { automatic, on, off };
@@ -26,12 +27,14 @@ enum class TrailsMode {
 struct Options {
   std::filesystem::path input;
   std::filesystem::path output;
+  OutputFormat output_format = OutputFormat::mp4;
   std::optional<std::filesystem::path> mission;
   MapMode map_mode = MapMode::automatic;
   std::optional<std::filesystem::path> map;
   std::optional<double> start;
   std::optional<double> end;
   std::optional<double> duration;
+  std::optional<double> at;
   double fps = 15.0;
   double warp = 1.0;
   int width = 1280;

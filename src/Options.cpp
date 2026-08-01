@@ -49,8 +49,6 @@ std::pair<int, int> parseSize(const std::string& value) {
     throw UsageError("--size dimensions must be whole numbers");
   if(width < 16 || width > 8192 || height < 16 || height > 8192)
     throw UsageError("--size dimensions must each be between 16 and 8192 pixels");
-  if(static_cast<int>(width) % 2 != 0 || static_cast<int>(height) % 2 != 0)
-    throw UsageError("--size dimensions must be even for H.264 compatibility");
   return {static_cast<int>(width), static_cast<int>(height)};
 }
 
@@ -76,6 +74,8 @@ bool isValueOption(const std::string& argument, const std::string& option) {
 
 ParseResult parseOptions(int argc, char* argv[]) {
   ParseResult result;
+  bool fps_set = false;
+  bool warp_set = false;
 
   for(int index = 1; index < argc; ++index) {
     const std::string argument = argv[index];
@@ -147,12 +147,17 @@ ParseResult parseOptions(int argc, char* argv[]) {
     } else if(isValueOption(argument, "--duration")) {
       result.options.duration = parseNumber(
           optionValue(argument, index, argc, argv, "--duration"), "--duration");
+    } else if(isValueOption(argument, "--at")) {
+      result.options.at = parseNumber(
+          optionValue(argument, index, argc, argv, "--at"), "--at");
     } else if(isValueOption(argument, "--fps")) {
       result.options.fps = parseNumber(
           optionValue(argument, index, argc, argv, "--fps"), "--fps");
+      fps_set = true;
     } else if(isValueOption(argument, "--warp")) {
       result.options.warp = parseNumber(
           optionValue(argument, index, argc, argv, "--warp"), "--warp");
+      warp_set = true;
     } else if(isValueOption(argument, "--size")) {
       const auto dimensions = parseSize(
           optionValue(argument, index, argc, argv, "--size"));
@@ -217,8 +222,14 @@ ParseResult parseOptions(int argc, char* argv[]) {
     result.options.output = result.options.input.filename();
     result.options.output.replace_extension(".mp4");
   }
-  if(!hasExtension(result.options.output, {".mp4", ".gif"}))
-    throw UsageError("--output must end in .mp4 or .gif");
+  if(hasExtension(result.options.output, {".mp4"}))
+    result.options.output_format = OutputFormat::mp4;
+  else if(hasExtension(result.options.output, {".gif"}))
+    result.options.output_format = OutputFormat::gif;
+  else if(hasExtension(result.options.output, {".png"}))
+    result.options.output_format = OutputFormat::png;
+  else
+    throw UsageError("--output must end in .mp4, .gif, or .png");
 
   if(result.options.duration && result.options.end)
     throw UsageError("--duration and --end cannot be used together");
@@ -228,6 +239,20 @@ ParseResult parseOptions(int argc, char* argv[]) {
     throw UsageError("--fps must be greater than zero and no more than 240");
   if(result.options.warp <= 0)
     throw UsageError("--warp must be greater than zero");
+
+  if(result.options.output_format == OutputFormat::png) {
+    if(result.options.start || result.options.end || result.options.duration)
+      throw UsageError("PNG snapshots use --at instead of --start, --end, or --duration");
+    if(fps_set || warp_set)
+      throw UsageError("PNG snapshots do not use --fps or --warp");
+  } else if(result.options.at) {
+    throw UsageError("--at requires a .png output file");
+  }
+
+  if(result.options.output_format == OutputFormat::mp4 &&
+     (result.options.width % 2 != 0 || result.options.height % 2 != 0)) {
+    throw UsageError("MP4 --size dimensions must be even for H.264 compatibility");
+  }
 
   return result;
 }
@@ -242,14 +267,16 @@ Arguments:
   INPUT.alog                 MOOS .alog file to render. It must be first.
 
 Output:
-  -o, --output FILE          Destination .mp4 or .gif file.
+  -o, --output FILE          Destination .mp4, .gif, or .png file.
                              Default: ./INPUT_BASENAME.mp4
-  --size WIDTHxHEIGHT        Final frame dimensions. Both values must be even.
+  --size WIDTHxHEIGHT        Final dimensions. MP4 values must be even.
                              Default: 1280x720
   --fps RATE                 Output frames per second. Default: 15
   --force                    Replace an existing output file.
 
 Time:
+  --at SECONDS               Exact log time for a PNG snapshot. PNG only.
+                             Default: log minimum
   --start SECONDS            First log-relative time. Default: log minimum
   --end SECONDS              End of the log-time interval. Default: log maximum
   --duration SECONDS         Log-time duration after --start; conflicts with --end.
@@ -282,11 +309,12 @@ General:
   -V, --version              Show version and renderer-backend information.
 
 Options may use either '--option value' or '--option=value'. The output suffix
-selects MP4 or GIF encoding. Explicit CLI scene options override mission-file
-settings. FFmpeg must be available on PATH.
+selects MP4, GIF, or single-frame PNG encoding. Explicit CLI scene options
+override mission-file settings. FFmpeg must be available on PATH.
 
 Examples:
   alog2media mission.alog
+  alog2media mission.alog --at 120 -o scene.png
   alog2media mission.alog -o clip.gif --start 20 --duration 30 --warp 4
   alog2media mission.alog --mission mission.moos --grid auto --trails 30
   alog2media mission.alog --map none --view fit --labels off

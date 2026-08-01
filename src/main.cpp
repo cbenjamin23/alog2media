@@ -27,17 +27,25 @@ int run(const alog2media::Options& options) {
   alog2media::MediaRenderer renderer(options);
   const alog2media::RenderMetadata& metadata = renderer.metadata();
 
-  const double media_duration =
+  const bool snapshot = options.output_format == alog2media::OutputFormat::png;
+  const double media_duration = snapshot ? 0.0 :
       (metadata.end - metadata.start) / options.warp;
-  const std::uint64_t frame_count = std::max<std::uint64_t>(
+  const std::uint64_t frame_count = snapshot ? 1 : std::max<std::uint64_t>(
       1, static_cast<std::uint64_t>(std::ceil(media_duration * options.fps)));
   if(frame_count > 100000000)
     throw std::runtime_error("requested render exceeds 100,000,000 frames");
 
   std::cout << "Rendering " << options.input << "\n"
-            << "  log time: " << metadata.start << " to " << metadata.end << "\n"
-            << "  frames:   " << frame_count << " at " << options.fps << " fps"
-            << " (" << options.warp << "x warp)\n"
+            << "  log time: " << metadata.start;
+  if(!snapshot)
+    std::cout << " to " << metadata.end;
+  std::cout << "\n";
+  if(snapshot)
+    std::cout << "  frames:   1 snapshot\n";
+  else
+    std::cout << "  frames:   " << frame_count << " at " << options.fps << " fps"
+              << " (" << options.warp << "x warp)\n";
+  std::cout
             << "  scene:    " << metadata.map << " via " << metadata.backend << "\n"
             << "  output:   " << options.output << "\n";
   if(metadata.mission) {
@@ -48,7 +56,8 @@ int run(const alog2media::Options& options) {
   }
 
   alog2media::FfmpegEncoder encoder(
-      options.output, options.width, options.height, options.fps, options.force);
+      options.output, options.width, options.height,
+      snapshot ? 1.0 : options.fps, options.force);
 
   for(std::uint64_t frame = 0; frame < frame_count; ++frame) {
     const double log_time = std::min(
@@ -56,13 +65,15 @@ int run(const alog2media::Options& options) {
         metadata.start + (static_cast<double>(frame) * options.warp / options.fps));
     encoder.writeFrame(renderer.render(log_time));
 
-    if(options.verbose || frame + 1 == frame_count || frame % 10 == 0) {
+    if(!snapshot &&
+       (options.verbose || frame + 1 == frame_count || frame % 10 == 0)) {
       std::cout << "\r  rendered " << (frame + 1) << "/" << frame_count
                 << " at log t=" << std::fixed << std::setprecision(2) << log_time
                 << std::flush;
     }
   }
-  std::cout << "\n";
+  if(!snapshot)
+    std::cout << "\n";
 
   encoder.finish();
   std::cout << "Created " << options.output << "\n";
