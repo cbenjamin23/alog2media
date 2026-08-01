@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-08-01
+
+- Add source installation through `cbenjamin23/tap/alog2media`.
+- Publish native Ubuntu 22.04 and 24.04 packages for amd64 and arm64 through a
+  signed APT repository.
+- Verify every Debian package by installing it and rendering a PNG without a
+  display server, then verify installation again from the public repository.
+
 ## 0.3.0 - 2026-08-01
 
 - Export a lossless single-frame PNG snapshot with `--at SECONDS`.
