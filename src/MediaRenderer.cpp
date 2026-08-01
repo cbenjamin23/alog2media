@@ -175,8 +175,9 @@ class MediaRenderer::Impl {
     ScopedCoutSilence silence(!options.verbose);
 
     std::optional<std::filesystem::path> mission_path = options.mission;
-    if(!mission_path && timeline_.regionInfo().empty()) {
-      mission_path = discoverMissionForLog(options.input);
+    if(!mission_path) {
+      mission_path = discoverMissionForLog(
+          options.input, timeline_.regionInfo().empty());
       metadata_.discovered_mission = mission_path.has_value();
     }
     if(mission_path) {

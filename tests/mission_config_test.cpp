@@ -117,6 +117,8 @@ int main(int argc, char* argv[]) {
   std::filesystem::remove(conventional);
   const std::filesystem::path generic = tree.path() / "viewer.moos";
   std::filesystem::copy_file(fixture, generic);
+  require(!alog2media::discoverMissionForLog(log, false),
+          "generic missions are ignored when logged context is complete");
   const auto sole_mission = alog2media::discoverMissionForLog(log);
   require(sole_mission && std::filesystem::equivalent(*sole_mission, generic),
           "one generic pMarineViewer mission is an unambiguous fallback");
@@ -127,9 +129,9 @@ int main(int argc, char* argv[]) {
           "multiple generic pMarineViewer missions require --mission");
 
   std::filesystem::copy_file(fixture, conventional);
-  const auto preferred = alog2media::discoverMissionForLog(log);
+  const auto preferred = alog2media::discoverMissionForLog(log, false);
   require(preferred && std::filesystem::equivalent(*preferred, conventional),
-          "targ_shoreside.moos wins over generic candidates");
+          "targ_shoreside.moos is imported even without generic fallback");
 
   std::cout << "mission config tests passed\n";
   return 0;

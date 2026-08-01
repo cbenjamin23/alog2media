@@ -190,7 +190,8 @@ Implemented:
 Implemented:
 
 - automatic `targ_shoreside.moos` discovery for normal XLOG layouts, with
-  `--mission FILE.moos` as an explicit override;
+  logged map/camera precedence and `--mission FILE.moos` as an explicit
+  override;
 - tri-state `auto|on|off` controls for grid, labels, and geometry;
 - `auto|off|full|SECONDS` trail policies;
 - CLI override precedence over mission visibility settings;

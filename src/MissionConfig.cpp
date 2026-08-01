@@ -112,7 +112,7 @@ std::optional<std::string> MissionConfig::last(std::string_view name) const {
 }
 
 std::optional<std::filesystem::path> discoverMissionForLog(
-    const std::filesystem::path& log) {
+    const std::filesystem::path& log, bool allow_generic_fallback) {
   std::vector<std::filesystem::path> directories;
   const std::filesystem::path adjacent = normalized(log).parent_path();
   directories.push_back(adjacent);
@@ -136,6 +136,9 @@ std::optional<std::filesystem::path> discoverMissionForLog(
       return normalized(candidate);
     }
   }
+
+  if(!allow_generic_fallback)
+    return std::nullopt;
 
   std::vector<std::filesystem::path> candidates;
   for(const std::filesystem::path& directory : directories) {

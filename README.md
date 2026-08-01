@@ -33,11 +33,13 @@ composes them in pMarineViewer order:
 
 The default is the normal mission viewport from logged `REGION_INFO`, with the
 coordinate grid off, labels and logged geometry on, and the normal recent
-trail. When `REGION_INFO` is absent, alog2media automatically looks beside the
-log and in its parent mission directory for `targ_shoreside.moos` or one
-unambiguous pMarineViewer mission. Supplying `--mission FILE.moos` overrides
-discovery. Mission import includes map visibility, pan/zoom fallback, vehicle
-styling, trails, and per-family geometry visibility.
+trail. alog2media automatically looks beside the log and in its parent mission
+directory for `targ_shoreside.moos`, importing its launch-time visual settings
+while retaining logged camera precedence. When `REGION_INFO` is absent, one
+unambiguous generically named pMarineViewer mission is also accepted.
+Supplying `--mission FILE.moos` overrides discovery. Mission import includes
+map visibility, pan/zoom fallback, vehicle styling, trails, and per-family
+geometry visibility.
 
 Configuration precedence is:
 

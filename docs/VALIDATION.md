@@ -54,8 +54,9 @@ mission/
 The render command omits `--mission`. It discovers the parent mission, resolves
 its `TIFF_FILE_B` map and datum, preserves its partial launch camera, and
 honors its grid, label, and trail settings. Unit coverage also proves relative
-input paths, a single generically named pMarineViewer mission, conventional
-filename preference, and rejection of ambiguous generic candidates.
+input paths, import of conventional `targ_shoreside.moos` even when generic
+fallback is disabled, a single generically named pMarineViewer mission when
+fallback is needed, and rejection of ambiguous generic candidates.
 
 ## 2026-07-31 — macOS Apple Silicon
 

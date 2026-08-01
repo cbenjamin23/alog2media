@@ -2,9 +2,10 @@
 
 ## Unreleased
 
-- Automatically discover `targ_shoreside.moos` or one unambiguous
-  pMarineViewer mission when a log has no `REGION_INFO`; retain `--mission` as
-  the explicit override.
+- Automatically discover `targ_shoreside.moos` for launch-time visual settings
+  while retaining logged camera precedence. When a log has no `REGION_INFO`,
+  also accept one unambiguous pMarineViewer mission; retain `--mission` as the
+  explicit override.
 
 ## 0.1.0 - 2026-07-31
 

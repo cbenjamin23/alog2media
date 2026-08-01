@@ -257,8 +257,9 @@ Time:
 
 Scene:
   --mission FILE.moos        Override automatic pMarineViewer mission discovery.
-                             Without REGION_INFO, searches beside INPUT.alog
-                             and in its parent mission directory.
+                             Searches beside INPUT.alog and in its parent for
+                             targ_shoreside.moos. Without REGION_INFO, also
+                             accepts one unambiguous pMarineViewer mission.
   --map FILE.tif|FILE.tiff   Override the configured TIFF map; matching .info
                              metadata is required. Use '--map none' for a
                              mapless local-coordinate scene.

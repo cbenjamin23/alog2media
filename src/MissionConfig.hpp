@@ -35,9 +35,10 @@ class MissionConfig {
 
 // Discover the pMarineViewer mission associated with a log in the two layouts
 // produced by normal mission launches: beside INPUT.alog, or beside its XLOG
-// parent directory. A conventional targ_shoreside.moos wins; otherwise there
-// must be exactly one usable .moos file across those locations.
+// parent directory. A conventional targ_shoreside.moos wins. When
+// allow_generic_fallback is true, there must otherwise be exactly one usable
+// .moos file across those locations.
 std::optional<std::filesystem::path> discoverMissionForLog(
-    const std::filesystem::path& log);
+    const std::filesystem::path& log, bool allow_generic_fallback = true);
 
 }  // namespace alog2media
