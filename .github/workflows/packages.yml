@@ -1,0 +1,236 @@
+name: Packages
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to package
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  MOOS_IVP_COMMIT: 174bd7340c33b43e96e1b7eb1ef57aae4df385c9
+  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+  LIBGL_ALWAYS_SOFTWARE: "1"
+  EGL_PLATFORM: surfaceless
+  ALOG2MEDIA_FONT: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+
+jobs:
+  build-deb:
+    name: ${{ matrix.codename }} / ${{ matrix.architecture }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            codename: jammy
+            architecture: amd64
+          - runner: ubuntu-22.04-arm
+            codename: jammy
+            architecture: arm64
+          - runner: ubuntu-24.04
+            codename: noble
+            architecture: amd64
+          - runner: ubuntu-24.04-arm
+            codename: noble
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+
+    steps:
+      - name: Check out the release
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Verify tag and runner architecture
+        run: |
+          test "v$(sed -nE 's/^project\(alog2media VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CMakeLists.txt)" = "$RELEASE_TAG"
+          test "$(dpkg --print-architecture)" = "${{ matrix.architecture }}"
+          . /etc/os-release
+          test "$VERSION_CODENAME" = "${{ matrix.codename }}"
+
+      - name: Install build and package dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            cmake \
+            dpkg-dev \
+            ffmpeg \
+            file \
+            fonts-dejavu-core \
+            freeglut3-dev \
+            git \
+            libegl1-mesa-dev \
+            libfltk1.3-dev \
+            libfreetype6-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libtiff-dev \
+            libxft-dev \
+            libxinerama-dev \
+            mesa-common-dev \
+            pkg-config
+
+      - name: Fetch pinned MOOS-IvP
+        run: |
+          git init "$RUNNER_TEMP/moos-ivp"
+          git -C "$RUNNER_TEMP/moos-ivp" remote add origin \
+            https://github.com/moos-ivp/moos-ivp.git
+          git -C "$RUNNER_TEMP/moos-ivp" fetch --depth=1 --no-tags origin \
+            "$MOOS_IVP_COMMIT"
+          git -C "$RUNNER_TEMP/moos-ivp" checkout --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/moos-ivp" rev-parse HEAD)" = \
+            "$MOOS_IVP_COMMIT"
+          echo "MOOS_IVP_ROOT=$RUNNER_TEMP/moos-ivp" >> "$GITHUB_ENV"
+
+      - name: Build pinned MOOS-IvP
+        run: |
+          cd "$MOOS_IVP_ROOT"
+          env -u DISPLAY -u WAYLAND_DISPLAY ./build.sh -j2
+          test -f "$MOOS_IVP_ROOT/lib/libmarineview.a"
+
+      - name: Build Debian package
+        env:
+          ALOG2MEDIA_APT_CODENAME: ${{ matrix.codename }}
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            ./scripts/build-deb.sh "$RUNNER_TEMP/packages"
+          package="$(find "$RUNNER_TEMP/packages" -name '*.deb' -print -quit)"
+          test "$(dpkg-deb -f "$package" Architecture)" = \
+            "${{ matrix.architecture }}"
+          test "$(dpkg-deb -f "$package" X-Alog2media-Codename)" = \
+            "${{ matrix.codename }}"
+
+      - name: Install and render with the package
+        run: |
+          package="$(find "$RUNNER_TEMP/packages" -name '*.deb' -print -quit)"
+          sudo apt-get install --yes "$package"
+          alog2media --version | grep -F "${RELEASE_TAG#v}"
+          test -f /usr/lib/alog2media/libMOOSGeodesy.so
+          g++ tests/fixture_map.cpp -ltiff -o "$RUNNER_TEMP/fixture_map"
+          cp tests/fixtures/basic.alog tests/fixtures/basic.info "$RUNNER_TEMP/"
+          "$RUNNER_TEMP/fixture_map" "$RUNNER_TEMP/basic.tif"
+          env -u DISPLAY -u WAYLAND_DISPLAY \
+            alog2media "$RUNNER_TEMP/basic.alog" --at 0.5 \
+              -o "$RUNNER_TEMP/package-smoke.png"
+          file "$RUNNER_TEMP/package-smoke.png" | grep -F 'PNG image data, 1280 x 720'
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: deb-${{ matrix.codename }}-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/packages/*.deb
+          if-no-files-found: error
+
+      - name: Attach package to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" "$RUNNER_TEMP"/packages/*.deb --clobber
+
+  publish-apt:
+    name: Publish signed APT repository
+    needs:
+      - build-deb
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Check out package tooling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Download Debian packages
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          pattern: deb-*
+          path: ${{ runner.temp }}/packages
+          merge-multiple: true
+
+      - name: Install repository tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            apt-utils dpkg-dev gnupg xz-utils
+
+      - name: Import archive signing key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: |
+          test -n "$APT_GPG_PRIVATE_KEY"
+          gpg --batch --import < <(printf '%s' "$APT_GPG_PRIVATE_KEY")
+          fingerprint="$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "fpr" {print $10; exit}')"
+          test -n "$fingerprint"
+          echo "APT_SIGNING_FINGERPRINT=$fingerprint" >> "$GITHUB_ENV"
+
+      - name: Build and verify repository metadata
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          ./scripts/build-apt-repo.sh \
+            "$RUNNER_TEMP/packages" "$RUNNER_TEMP/site/apt"
+          cp packaging/apt/site-index.html "$RUNNER_TEMP/site/index.html"
+          gpgv --keyring packaging/apt/alog2media-archive-keyring.gpg \
+            "$RUNNER_TEMP/site/apt/dists/jammy/InRelease"
+          gpgv --keyring packaging/apt/alog2media-archive-keyring.gpg \
+            "$RUNNER_TEMP/site/apt/dists/noble/InRelease"
+          test "$(find "$RUNNER_TEMP/site/apt/pool" -name '*.deb' | wc -l)" -eq 4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: ${{ runner.temp }}/site
+
+      - name: Deploy APT repository
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+  verify-apt:
+    name: Verify APT / ${{ matrix.codename }}
+    needs:
+      - publish-apt
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            codename: jammy
+          - runner: ubuntu-24.04
+            codename: noble
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Install from the public signed repository
+        run: |
+          curl -fsSL \
+            https://cbenjamin23.github.io/alog2media/apt/alog2media-archive-keyring.gpg \
+            | sudo tee /usr/share/keyrings/alog2media-archive-keyring.gpg >/dev/null
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/alog2media-archive-keyring.gpg] https://cbenjamin23.github.io/alog2media/apt ${{ matrix.codename }} main" \
+            | sudo tee /etc/apt/sources.list.d/alog2media.list
+          for attempt in 1 2 3 4 5; do
+            if sudo apt-get update; then
+              break
+            fi
+            test "$attempt" -lt 5
+            sleep 5
+          done
+          sudo apt-get install --yes alog2media
+          alog2media --version | grep -F "${RELEASE_TAG#v}"

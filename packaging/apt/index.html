@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>alog2media APT repository</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 52rem; margin: 3rem auto; padding: 0 1rem; }
+    code, pre { background: #f4f4f4; border-radius: .25rem; }
+    code { padding: .1rem .25rem; }
+    pre { overflow-x: auto; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>alog2media APT repository</h1>
+  <p>Signed packages are published for Ubuntu 22.04 (Jammy) and 24.04 (Noble), on amd64 and arm64.</p>
+  <pre><code>curl -fsSL https://cbenjamin23.github.io/alog2media/apt/alog2media-archive-keyring.gpg \
+  | sudo tee /usr/share/keyrings/alog2media-archive-keyring.gpg &gt;/dev/null
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/alog2media-archive-keyring.gpg] https://cbenjamin23.github.io/alog2media/apt ${VERSION_CODENAME} main" \
+  | sudo tee /etc/apt/sources.list.d/alog2media.list
+sudo apt update
+sudo apt install alog2media</code></pre>
+  <p>Source and release notes: <a href="https://github.com/cbenjamin23/alog2media">github.com/cbenjamin23/alog2media</a>.</p>
+</body>
+</html>
