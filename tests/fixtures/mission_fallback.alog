@@ -1,0 +1,29 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOG FILE:       synthetic mission fallback fixture
+%% LOGSTART           4000.000000
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+0.00000         DB_TIME              MOOSDB_alpha    4000.00000
+0.01000         NODE_REPORT          pNodeReporter   NAME=charlie,TYPE=auv,LAT=42.0001,LON=-70.9999,HDG=90
+0.02000         NODE_REPORT_LOCAL    pNodeReporter   NAME=alpha,TYPE=kayak,COLOR=yellow,LENGTH=4
+0.03000         NAV_X                uSimMarine      -25
+0.03000         NAV_Y                uSimMarine      -15
+0.03000         NAV_HEADING          uSimMarine      90
+0.15000         NAV_X                uSimMarine      -20
+0.15000         NAV_Y                uSimMarine      -10
+0.25000         NAV_X                uSimMarine      -15
+0.25000         NAV_Y                uSimMarine      -5
+0.35000         NAV_X                uSimMarine      -10
+0.35000         NAV_Y                uSimMarine      0
+0.45000         NAV_X                uSimMarine      -5
+0.45000         NAV_Y                uSimMarine      5
+0.55000         NAV_X                uSimMarine      0
+0.55000         NAV_Y                uSimMarine      10
+0.65000         NAV_X                uSimMarine      5
+0.65000         NAV_Y                uSimMarine      15
+0.75000         NAV_X                uSimMarine      10
+0.75000         NAV_Y                uSimMarine      10
+0.85000         NAV_X                uSimMarine      15
+0.85000         NAV_Y                uSimMarine      5
+0.95000         NAV_X                uSimMarine      20
+0.95000         NAV_Y                uSimMarine      0
+1.10000         APPCAST              pMarineViewer   final fixture timestamp

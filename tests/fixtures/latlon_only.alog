@@ -1,0 +1,7 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOG FILE:       synthetic mission-datum fallback fixture
+%% LOGSTART           3000.000000
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+0.00000         DB_TIME              MOOSDB_shoreside 3000.00000
+0.10000         NODE_REPORT          pNodeReporter   NAME=charlie,TYPE=auv,LAT=42.0001,LON=-70.9999,HDG=90
+1.00000         APPCAST              pMarineViewer   final fixture timestamp

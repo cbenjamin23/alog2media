@@ -1,0 +1,19 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOG FILE:       synthetic alog2media integration fixture
+%% LOGSTART           1000.000000
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+0.00000         DB_TIME              MOOSDB_alpha    1000.00000
+0.00001         REGION_INFO          pMarineViewer   lat_datum=42.0, lon_datum=-71.0, img_file=basic.tif, zoom=1, pan_x=0, pan_y=0
+0.00002         NODE_REPORT_LOCAL    pNodeReporter   NAME=alpha,TYPE=kayak,COLOR=yellow,LENGTH=4
+0.00003         NAV_X                uSimMarine      -20.00000
+0.00004         NAV_Y                uSimMarine      -10.00000
+0.00005         NAV_HEADING          uSimMarine      90.00000
+0.00006         VIEW_POINT           pMarineViewer   x=0,y=0,label=ORIGIN,label_color=white,vertex_color=red,vertex_size=8
+0.00007         VIEW_SEGLIST         pMarineViewer   pts={-30,-20:0,20:30,-20},label=ROUTE,label_color=yellow,edge_color=white,vertex_color=lime,vertex_size=3,edge_size=2
+0.50000         VIEW_RANGE_PULSE     pMarineViewer   x=0,y=0,radius=15,duration=1,fill=0.25,edge_color=pink,fill_color=purple,label=PULSE
+1.00003         NAV_X                uSimMarine      0.00000
+1.00004         NAV_Y                uSimMarine      0.00000
+1.00005         NAV_HEADING          uSimMarine      45.00000
+2.00003         NAV_X                uSimMarine      20.00000
+2.00004         NAV_Y                uSimMarine      10.00000
+2.00005         NAV_HEADING          uSimMarine      0.00000

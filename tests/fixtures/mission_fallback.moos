@@ -1,0 +1,19 @@
+ServerHost = localhost
+ServerPort = 9000
+Community  = alpha
+
+LatOrigin  = 42.0
+LongOrigin = -71.0
+
+ProcessConfig = pMarineViewer
+{
+  // TIFF_FILE_B alone must still select the initial mission map.
+  TIFF_FILE_B = mission_only.tif
+
+  // A partial camera is valid: unspecified pan remains at its default.
+  zoom = 1.25
+
+  hash_viewable     = true
+  vehicles_name_mode = off
+  trails_viewable   = false
+}
