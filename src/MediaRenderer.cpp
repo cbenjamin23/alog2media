@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -147,7 +148,7 @@ class ScopedMapAlias {
 std::filesystem::path resolveRelativeMap(
     const std::filesystem::path& requested,
     const std::vector<std::filesystem::path>& base_directories) {
-  if(requested.is_absolute() || std::filesystem::is_regular_file(requested))
+  if(requested.is_absolute())
     return requested;
   for(const std::filesystem::path& base : base_directories) {
     if(base.empty())
@@ -156,9 +157,59 @@ std::filesystem::path resolveRelativeMap(
     if(std::filesystem::is_regular_file(candidate))
       return candidate;
   }
+  if(std::filesystem::is_regular_file(requested))
+    return requested;
   // Preserve a bare unresolved name so MarineViewer can use IVP_IMAGE_DIRS
   // and the normal installed MOOS-IvP data search path.
   return requested;
+}
+
+std::optional<std::filesystem::path> matchingMissionMap(
+    const std::optional<MissionConfig>& mission,
+    const std::filesystem::path& logged_map) {
+  if(!mission)
+    return std::nullopt;
+  for(const MissionParam& param : mission->params()) {
+    const std::string name = lower(stripBlankEnds(param.name));
+    if((name == "tiff_file" || name == "tiff_file_b") &&
+       !param.value.empty()) {
+      const std::filesystem::path configured(param.value);
+      if(configured.filename() == logged_map.filename())
+        return configured;
+    }
+  }
+  return std::nullopt;
+}
+
+void appendAncestorMapDirectories(
+    const std::filesystem::path& start,
+    std::vector<std::filesystem::path>& directories) {
+  std::error_code error;
+  std::filesystem::path current =
+      std::filesystem::absolute(start, error);
+  if(error)
+    current = start;
+  for(int depth = 0; depth < 12 && !current.empty(); ++depth) {
+    directories.push_back(current / "data");
+    directories.push_back(current / "ivp" / "data");
+    const std::filesystem::path parent = current.parent_path();
+    if(parent == current)
+      break;
+    current = parent;
+  }
+}
+
+void appendEnvironmentMapDirectories(
+    std::vector<std::filesystem::path>& directories) {
+  const char* configured = std::getenv("IVP_IMAGE_DIRS");
+  if(configured == nullptr)
+    return;
+  std::istringstream values(configured);
+  std::string directory;
+  while(std::getline(values, directory, ':')) {
+    if(!directory.empty())
+      directories.emplace_back(directory);
+  }
 }
 
 bool isMissionMapParameter(const std::string& name) {
@@ -176,8 +227,7 @@ class MediaRenderer::Impl {
 
     std::optional<std::filesystem::path> mission_path = options.mission;
     if(!mission_path) {
-      mission_path = discoverMissionForLog(
-          options.input, timeline_.regionInfo().empty());
+      mission_path = discoverMissionForLog(options.input);
       metadata_.discovered_mission = mission_path.has_value();
     }
     if(mission_path) {
@@ -373,14 +423,40 @@ class MediaRenderer::Impl {
     }
 
     std::vector<std::filesystem::path> bases;
-    if(source == Source::region)
+    if(source == Source::cli)
+      bases.push_back(std::filesystem::current_path());
+    if(source == Source::region) {
       bases.push_back(options_.input.parent_path());
+      // REGION_INFO deliberately logs only the map basename. Recover a custom
+      // relative or absolute path from the mission when it names that map.
+      const std::optional<std::filesystem::path> configured_map =
+          matchingMissionMap(mission_, requested);
+      if(mission_ && configured_map) {
+        const std::filesystem::path configured = resolveRelativeMap(
+            *configured_map, {mission_->source().parent_path()});
+        if(std::filesystem::is_regular_file(configured)) {
+          selected_map_ = configured;
+          return;
+        }
+      }
+    }
     if(source == Source::mission && mission_)
       bases.push_back(mission_->source().parent_path());
     if(source != Source::mission && mission_)
       bases.push_back(mission_->source().parent_path());
     if(source != Source::region)
       bases.push_back(options_.input.parent_path());
+
+    appendAncestorMapDirectories(options_.input.parent_path(), bases);
+    if(mission_)
+      appendAncestorMapDirectories(mission_->source().parent_path(), bases);
+#ifdef ALOG2MEDIA_SOURCE_MAP_DIR
+    bases.emplace_back(ALOG2MEDIA_SOURCE_MAP_DIR);
+#endif
+#ifdef ALOG2MEDIA_INSTALL_MAP_DIR
+    bases.emplace_back(ALOG2MEDIA_INSTALL_MAP_DIR);
+#endif
+    appendEnvironmentMapDirectories(bases);
     selected_map_ = resolveRelativeMap(requested, bases);
   }
 

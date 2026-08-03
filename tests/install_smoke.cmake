@@ -1,5 +1,5 @@
 if(NOT DEFINED BUILD_DIR OR NOT DEFINED INSTALL_PREFIX OR
-   NOT DEFINED INSTALL_BINDIR)
+   NOT DEFINED INSTALL_BINDIR OR NOT DEFINED INSTALL_DATADIR)
   message(FATAL_ERROR "install smoke test requires build and install paths")
 endif()
 
@@ -27,3 +27,11 @@ if(NOT version_stdout MATCHES "alog2media")
   message(FATAL_ERROR
     "installed executable returned unexpected version output: ${version_stdout}")
 endif()
+
+foreach(required_map forrest19.tif forrest19.info)
+  set(map_path
+    "${INSTALL_PREFIX}/${INSTALL_DATADIR}/alog2media/maps/${required_map}")
+  if(NOT EXISTS "${map_path}")
+    message(FATAL_ERROR "installed standard map is missing: ${map_path}")
+  endif()
+endforeach()

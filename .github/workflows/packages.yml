@@ -118,6 +118,8 @@ jobs:
           sudo apt-get install --yes "$package"
           alog2media --version | grep -F "${RELEASE_TAG#v}"
           test -f /usr/lib/alog2media/libMOOSGeodesy.so
+          test -f /usr/share/alog2media/maps/forrest19.tif
+          test -f /usr/share/alog2media/maps/forrest19.info
           g++ tests/fixture_map.cpp -ltiff -o "$RUNNER_TEMP/fixture_map"
           cp tests/fixtures/basic.alog tests/fixtures/basic.info "$RUNNER_TEMP/"
           "$RUNNER_TEMP/fixture_map" "$RUNNER_TEMP/basic.tif"
