@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.2 - 2026-08-03
 
 - Ignore invalid negative pre-start records when calculating the default media
   range, including malformed `uMAC` appcast requests from warped launches.

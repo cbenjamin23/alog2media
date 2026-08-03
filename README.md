@@ -15,7 +15,7 @@ The log is always the first argument. The zero-option form writes
 `./mission.mp4`; the output suffix selects MP4, GIF, or PNG. Run
 `alog2media -h` for the complete, coherent option reference.
 
-The current release is `v0.3.1`. It is a native C++/CMake package. The
+The current release is `v0.3.2`. It is a native C++/CMake package. The
 supported dependency baseline is official MOOS-IvP commit
 `174bd7340c33b43e96e1b7eb1ef57aae4df385c9`; CI validates macOS and
 displayless Linux against that revision.
@@ -87,6 +87,29 @@ future positions. `--view fit` considers vehicles and supported geometry
 active during the requested interval. PNG output contains exactly one
 lossless frame; it uses `--at` rather than video interval, FPS, or warp options.
 
+## Performance
+
+Animation work scales mainly with the number of rendered frames:
+
+```text
+frames = ceil((end - start) / warp * fps)
+```
+
+On an Apple M1 Max, the Alpha tutorial log at 1280×720 produced these measured
+wall-clock results with the normal mission scene:
+
+| Output | Media | Frames | Render time | Throughput | Size |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| H.264 MP4 | 30 s | 900 | 3.84 s | 234 frames/s | 1.93 MB |
+| Animated GIF | 10 s | 300 | 13.78 s | 22 frames/s | 1.00 MB |
+| Lossless PNG | one frame | 1 | 0.25 s | n/a | 1.80 MB |
+
+That MP4 measurement projects the complete 284.45-second Alpha log at the
+default 30 fps to roughly 36 seconds of rendering. `--warp 10` reduces it to
+about 854 frames and roughly 4 seconds on the same machine. Scene complexity,
+resolution, output format, encoder build, and hardware affect throughput; GIF
+is substantially slower than H.264 MP4 in this test.
+
 ## Install
 
 Install with Homebrew on macOS or Linux:
@@ -122,7 +145,7 @@ produce MP4.
 Clone the release and supported MOOS-IvP revision:
 
 ```bash
-git clone --branch v0.3.1 https://github.com/cbenjamin23/alog2media.git
+git clone --branch v0.3.2 https://github.com/cbenjamin23/alog2media.git
 git clone https://github.com/moos-ivp/moos-ivp.git
 git -C moos-ivp checkout 174bd7340c33b43e96e1b7eb1ef57aae4df385c9
 cd moos-ivp

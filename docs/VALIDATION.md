@@ -96,6 +96,24 @@ The render smoke test also constructs a repository-local
 resolved relative to the mission file. The install smoke test confirms the
 standard `forrest19` TIFF/INFO pair is included in the install tree.
 
+## 2026-08-03 — Alpha rendering performance
+
+The Homebrew HEAD build at commit `62265b3` was measured on a 10-core Apple M1
+Max running macOS 26.5.2 with FFmpeg 8.1.2. Each command used the real Alpha
+tutorial log, its discovered `alpha.moos`, the normal `forrest19.tif` scene,
+and 1280×720 output:
+
+| Format | Requested interval | FPS / frames | Wall time | Throughput | Bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| H.264 MP4 | 30 s | 30 / 900 | 3.84 s | 234.4 frames/s | 1,926,938 |
+| Animated GIF | 10 s | 30 / 300 | 13.78 s | 21.8 frames/s | 997,521 |
+| PNG | log time 120 | 1 frame | 0.25 s | n/a | 1,799,362 |
+
+The log's automatic valid range is `0.15148` through `284.59822`, or 284.44674
+seconds. At default settings this yields 8,534 frames; the measured MP4 rate
+projects about 36 seconds to render the complete file on the benchmark host.
+These are reference measurements, not a fixed performance guarantee.
+
 ## 2026-08-01 — real-mission v0.2.0 release gate
 
 Two existing missions were launched normally, logged, and rendered with the
