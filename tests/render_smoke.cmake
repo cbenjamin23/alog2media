@@ -132,6 +132,24 @@ if(NOT png_result EQUAL 0)
   message(FATAL_ERROR "PNG snapshot render failed:\n${png_output}\n${png_error}")
 endif()
 
+foreach(map_suffix tif tiff)
+  execute_process(
+    COMMAND "${ALOG2MEDIA}" "${WORK_DIR}/basic.alog"
+      --map "${WORK_DIR}/basic.${map_suffix}"
+      --view fit
+      --at 0.5
+      --size 320x180
+      --output "${WORK_DIR}/map-${map_suffix}.png"
+      --force
+    RESULT_VARIABLE alias_result
+    OUTPUT_VARIABLE alias_output
+    ERROR_VARIABLE alias_error)
+  if(NOT alias_result EQUAL 0)
+    message(FATAL_ERROR
+      "${map_suffix} lossless render failed:\n${alias_output}\n${alias_error}")
+  endif()
+endforeach()
+
 execute_process(
   COMMAND "${FFMPEG}" -v error -i "${WORK_DIR}/map-tif.mp4" -f framemd5 -
   RESULT_VARIABLE tif_decode_result
@@ -146,8 +164,23 @@ if(NOT tif_decode_result EQUAL 0 OR NOT tiff_decode_result EQUAL 0)
   message(FATAL_ERROR
     "MP4 frame decode failed: ${tif_decode_error}${tiff_decode_error}")
 endif()
-if(NOT tif_frames STREQUAL tiff_frames)
-  message(FATAL_ERROR ".tif and .tiff renders produced different decoded frames")
+
+execute_process(
+  COMMAND "${FFMPEG}" -v error -i "${WORK_DIR}/map-tif.png" -f framemd5 -
+  RESULT_VARIABLE tif_alias_result
+  OUTPUT_VARIABLE tif_alias_frame
+  ERROR_VARIABLE tif_alias_error)
+execute_process(
+  COMMAND "${FFMPEG}" -v error -i "${WORK_DIR}/map-tiff.png" -f framemd5 -
+  RESULT_VARIABLE tiff_alias_result
+  OUTPUT_VARIABLE tiff_alias_frame
+  ERROR_VARIABLE tiff_alias_error)
+if(NOT tif_alias_result EQUAL 0 OR NOT tiff_alias_result EQUAL 0)
+  message(FATAL_ERROR
+    "lossless alias decode failed: ${tif_alias_error}${tiff_alias_error}")
+endif()
+if(NOT tif_alias_frame STREQUAL tiff_alias_frame)
+  message(FATAL_ERROR ".tif and .tiff lossless renders produced different frames")
 endif()
 
 execute_process(
