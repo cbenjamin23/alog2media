@@ -286,6 +286,12 @@ ALogTimeline ALogTimeline::load(const std::filesystem::path& path) {
     const std::optional<double> time = number(time_text);
     if(!time)
       continue;
+    // ALOG timestamps are elapsed log time. Some warped launches can emit
+    // startup APPCAST_REQ messages whose wall-clock value was incorrectly
+    // offset by LOGSTART, producing enormous negative timestamps. They are
+    // outside the log timeline and must not define the default media range.
+    if(*time < 0)
+      continue;
     std::string value;
     std::getline(fields, value);
     value = trimLeft(value);

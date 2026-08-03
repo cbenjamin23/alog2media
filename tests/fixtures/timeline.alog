@@ -2,6 +2,7 @@
 %% LOG FILE:       synthetic raw timeline fixture
 %% LOGSTART           1000.000000
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-16071974355.90965 APPCAST_REQ          uMAC_4424       node=all,app=all,duration=10.0,key=startup
 0.00000         DB_TIME              MOOSDB_shoreside 1000.00000
 0.00001         REGION_INFO          pMarineViewer   lat_datum=42.0,lon_datum=-71.0,zoom=1,pan_x=0,pan_y=0
 0.10000         NODE_REPORT          pNodeReporter   NAME=alpha,X=1,Y=2,HDG=90

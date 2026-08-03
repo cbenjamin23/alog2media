@@ -31,7 +31,8 @@ int main(int argc, char* argv[]) {
       alog2media::ALogTimeline::load(fixture);
 
   require(closeTo(timeline.logStartUtc(), 1000), "LOGSTART is parsed");
-  require(closeTo(timeline.minTime(), 0), "minimum time is parsed");
+  require(closeTo(timeline.minTime(), 0),
+          "negative pre-start outliers do not define the media range");
   require(closeTo(timeline.maxTime(), 2), "maximum time is parsed");
   require(timeline.community() == "shoreside", "DB community is inferred");
   require(timeline.vehicles().size() == 2, "two reported vehicles are found");
