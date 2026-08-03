@@ -30,9 +30,10 @@ By default, alog2media reproduces the mission's configured startup scene:
 4. vehicle trails
 5. vehicle bodies and names
 
-It uses the map and startup camera recorded in `REGION_INFO`. It also searches
-beside the log and in its parent mission directory for the ordinary
-`targ_shoreside.moos`, importing launch-time visibility, vehicle, trail, and
+It uses the map identity and startup camera recorded in `REGION_INFO`. It also
+searches beside the log and in its parent mission directory for the ordinary
+`targ_shoreside.moos`, or one unambiguous `.moos` file containing a
+pMarineViewer block. It imports launch-time visibility, vehicle, trail, and
 geometry settings. This makes the normal layout work without `--mission`:
 
 ```text
@@ -46,6 +47,13 @@ Configuration precedence is explicit CLI options, logged `REGION_INFO`,
 discovered or explicit mission settings, then pMarineViewer-compatible
 defaults. Use `--mission FILE.moos` only to override discovery or supply a
 mission stored elsewhere.
+
+`REGION_INFO` stores only the active map's basename. For a repository-local
+custom map such as `tiff_file = maps/harbor.tif`, alog2media recovers that
+reference from the discovered mission and resolves it relative to the `.moos`
+file. It also searches beside the log, nearby `ivp/data` directories,
+`IVP_IMAGE_DIRS`, and the standard maps installed with alog2media. The TIFF and
+its same-basename `.info` file must remain together.
 
 An `.alog` cannot recover a camera or visibility change made interactively
 after launch unless that change was logged. `--view mission` is therefore the
@@ -138,9 +146,9 @@ export PATH="$HOME/.local/bin:$PATH"
 
 MOOS-IvP is needed while building, not as a source checkout at runtime. The
 installed executable contains the statically linked IvP viewer code and ships
-its linked MOOSGeodesy shared library with a relative runtime search path.
-Runtime still needs its platform graphics libraries, FLTK, FreeType, libtiff,
-a bold sans-serif system font, FFmpeg, and any map files referenced by a log.
+its linked MOOSGeodesy shared library and the standard MOOS-IvP maps. Runtime
+still needs its platform graphics libraries, FLTK, FreeType, libtiff, a bold
+sans-serif system font, FFmpeg, and any custom map referenced by a mission.
 
 ## Safety and verification
 

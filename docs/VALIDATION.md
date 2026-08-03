@@ -78,6 +78,24 @@ input paths, import of conventional `targ_shoreside.moos` even when generic
 fallback is disabled, a single generically named pMarineViewer mission when
 fallback is needed, and rejection of ambiguous generic candidates.
 
+## 2026-08-03 — launch outliers and automatic map lookup
+
+The Alpha tutorial log reproduced a warped-launch `uMAC` defect: valid records
+spanned `0.15148` through `284.59822`, while malformed `APPCAST_REQ` records
+used timestamps near `-16071974355`. The rebuilt tool now ignores negative
+pre-start records and selects the valid range without `--start`.
+
+The same log was rendered with no `--mission`, `--map`, or `--start`. It
+discovered `alpha.moos`, selected the logged `forrest19.tif` from the nearby
+MOOS-IvP data directory, and rendered from log time `0.15148`.
+
+The render smoke test also constructs a repository-local
+`maps/custom.tif`/`maps/custom.info` pair. Its `.alog` contains only
+`img_file=custom.tif`; its discovered mission retains
+`tiff_file=maps/custom.tif`. A zero-map-override PNG render proves the path is
+resolved relative to the mission file. The install smoke test confirms the
+standard `forrest19` TIFF/INFO pair is included in the install tree.
+
 ## 2026-08-01 — real-mission v0.2.0 release gate
 
 Two existing missions were launched normally, logged, and rendered with the

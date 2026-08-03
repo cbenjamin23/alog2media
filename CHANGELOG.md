@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Ignore invalid negative pre-start records when calculating the default media
+  range, including malformed `uMAC` appcast requests from warped launches.
+- Discover one unambiguous pMarineViewer mission even when `REGION_INFO` is
+  present, allowing custom map paths to resolve relative to their `.moos` file.
+- Search nearby MOOS-IvP data directories and `IVP_IMAGE_DIRS`, and install the
+  standard MOOS-IvP maps with binary packages.
+
 ## 0.3.1 - 2026-08-01
 
 - Add source installation through `cbenjamin23/tap/alog2media`.
