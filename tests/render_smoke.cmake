@@ -93,6 +93,30 @@ if(custom_map_path EQUAL -1)
     "custom map was not resolved through the mission:\n${custom_output}")
 endif()
 
+# A custom mission outside the bounded adjacent/parent discovery layout must
+# fail with both ways to identify the missing context, rather than a vague map
+# loader error.
+file(MAKE_DIRECTORY "${WORK_DIR}/orphan/logs")
+file(COPY_FILE "${WORK_DIR}/custom-mission/logs/custom.alog"
+     "${WORK_DIR}/orphan/logs/custom.alog")
+execute_process(
+  COMMAND "${ALOG2MEDIA}" "${WORK_DIR}/orphan/logs/custom.alog"
+    --at 0.5
+    --output "${WORK_DIR}/orphan.png"
+  RESULT_VARIABLE orphan_result
+  OUTPUT_VARIABLE orphan_output
+  ERROR_VARIABLE orphan_error)
+if(orphan_result EQUAL 0)
+  message(FATAL_ERROR "orphan custom-map render unexpectedly succeeded")
+endif()
+foreach(expected "--mission FILE.moos" "--map FILE.tif" "matching .info")
+  string(FIND "${orphan_error}" "${expected}" diagnostic_at)
+  if(diagnostic_at EQUAL -1)
+    message(FATAL_ERROR
+      "orphan diagnostic lacks '${expected}':\n${orphan_error}")
+  endif()
+endforeach()
+
 execute_process(
   COMMAND "${ALOG2MEDIA}" "${WORK_DIR}/basic.alog"
     --map "${WORK_DIR}/basic.tif"

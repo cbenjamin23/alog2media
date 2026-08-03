@@ -8,6 +8,8 @@
   present, allowing custom map paths to resolve relative to their `.moos` file.
 - Search nearby MOOS-IvP data directories and `IVP_IMAGE_DIRS`, and install the
   standard MOOS-IvP maps with binary packages.
+- Explain `--mission` and `--map` recovery directly when a custom map's mission
+  is outside the bounded automatic discovery layout.
 
 ## 0.3.1 - 2026-08-01
 

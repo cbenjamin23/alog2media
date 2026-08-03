@@ -291,10 +291,17 @@ class MediaRenderer::Impl {
     if(!viewer_->prepareMap()) {
       if(mapless_)
         throw std::runtime_error("could not initialize the mapless coordinate scene");
-      throw std::runtime_error(
-          "unable to load map '" + selected_map_.string() +
-          "' and its matching .info metadata; use --map with an exact path, "
-          "--map none, or configure IVP_IMAGE_DIRS");
+      std::ostringstream message;
+      message << "unable to load map '" << selected_map_.string()
+              << "' and its matching .info metadata; ";
+      if(!mission_ && options_.map_mode == MapMode::automatic) {
+        message << "no pMarineViewer mission was discovered beside the log "
+                   "or in its parent directory; if a .moos file elsewhere "
+                   "contains the custom map path, pass --mission FILE.moos; ";
+      }
+      message << "otherwise pass --map FILE.tif, use --map none, or configure "
+                 "IVP_IMAGE_DIRS";
+      throw std::runtime_error(message.str());
     }
 
     if(mapless_) {
