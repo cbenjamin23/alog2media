@@ -78,7 +78,7 @@ The principal scene options are:
 --map FILE.tif|FILE.tiff   Override the logged/configured map.
 --map none                 Render a mapless local-coordinate scene.
 --view mission|fit         Use configured pan/zoom or fit tracks and geometry.
---grid auto|on|off         Follow mission config or override the hash grid.
+--grid auto|on|off         Grid is off by default; auto follows mission config.
 --trails auto|off|full|S   Configured recent trail, none, full, or S seconds.
 --labels auto|on|off       Follow mission config or override scene labels.
 --geometry auto|on|off     Follow mission config or override logged geometry.

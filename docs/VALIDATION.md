@@ -98,21 +98,26 @@ standard `forrest19` TIFF/INFO pair is included in the install tree.
 
 ## 2026-08-03 — Alpha rendering performance
 
-The Homebrew HEAD build at commit `62265b3` was measured on a 10-core Apple M1
-Max running macOS 26.5.2 with FFmpeg 8.1.2. Each command used the real Alpha
-tutorial log, its discovered `alpha.moos`, the normal `forrest19.tif` scene,
+The corrected build was measured on a 10-core Apple M1 Max running macOS
+26.5.2 with FFmpeg 8.1.2. Each command used the real Alpha tutorial log, its
+discovered `alpha.moos`, the normal `forrest19.tif` scene, grid-off default,
 and 1280×720 output:
 
 | Format | Requested interval | FPS / frames | Wall time | Throughput | Bytes |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| H.264 MP4 | 30 s | 30 / 900 | 3.84 s | 234.4 frames/s | 1,926,938 |
-| Animated GIF | 10 s | 30 / 300 | 13.78 s | 21.8 frames/s | 997,521 |
-| PNG | log time 120 | 1 frame | 0.25 s | n/a | 1,799,362 |
+| H.264 MP4 | full log, 1× | 15 / 4,267 | 14.53 s | 293.7 frames/s | 10,129,076 |
+| H.264 MP4 | full log, 10× | 15 / 427 | 1.61 s | 265.2 frames/s | 1,289,245 |
+| Animated GIF | 10 s excerpt, 1× | 15 / 150 | 6.63 s | 22.6 frames/s | 1,000,949 |
+| PNG | log time 120 | 1 frame | 0.23 s | n/a | 1,803,987 |
 
 The log's automatic valid range is `0.15148` through `284.59822`, or 284.44674
-seconds. At default settings this yields 8,534 frames; the measured MP4 rate
-projects about 36 seconds to render the complete file on the benchmark host.
-These are reference measurements, not a fixed performance guarantee.
+seconds. alogview is an interactive viewer rather than a batch exporter, so
+its corresponding playback takes about 284.45 seconds at 1× or 28.45 seconds
+at 10×. The MP4 exports were therefore about 19.6× and 17.7× faster than
+watching the same timelines. This compares complete workflows, not rendering
+alone: alogview does not encode media and may draw fewer frames at its GUI
+refresh rate. These are reference measurements, not a fixed performance
+guarantee.
 
 ## 2026-08-01 — real-mission v0.2.0 release gate
 

@@ -22,19 +22,22 @@ displayless Linux against that revision.
 
 ## Natural mission rendering
 
-By default, alog2media reproduces the mission's configured startup scene:
+By default, alog2media reproduces the mission's configured startup scene with
+the coordinate grid deliberately kept off:
 
 1. TIFF map, or a mapless coordinate plane
-2. optional coordinate grid
+2. optional coordinate grid when requested
 3. active logged `VIEW_*` geometry, operation area, datum, and drop points
 4. vehicle trails
 5. vehicle bodies and names
 
-It uses the map identity and startup camera recorded in `REGION_INFO`. It also
+Use `--grid auto` to honor `hash_viewable` from the mission or `--grid on` to
+force the grid on. alog2media uses the map identity and startup camera recorded
+in `REGION_INFO`. It also
 searches beside the log and in its parent mission directory for the ordinary
 `targ_shoreside.moos`, or one unambiguous `.moos` file containing a
-pMarineViewer block. It imports launch-time visibility, vehicle, trail, and
-geometry settings. This makes the normal layout work without `--mission`:
+pMarineViewer block. It imports launch-time vehicle, trail, label, and geometry
+settings. This makes the normal layout work without `--mission`:
 
 ```text
 mission/
@@ -74,7 +77,7 @@ supported geometry.
 --map FILE.tif|FILE.tiff  Override the logged/configured map.
 --map none                Render without a TIFF map.
 --view mission|fit        Use the startup view or fit scene content.
---grid auto|on|off        Follow mission config or override the grid.
+--grid auto|on|off        Grid is off by default; auto follows mission config.
 --labels auto|on|off      Follow mission config or override labels.
 --geometry auto|on|off    Follow mission config or override geometry.
 --trails auto|off|full|S  Configured, none, full, or S recent seconds.
@@ -95,20 +98,26 @@ Animation work scales mainly with the number of rendered frames:
 frames = ceil((end - start) / warp * fps)
 ```
 
-On an Apple M1 Max, the Alpha tutorial log at 1280×720 produced these measured
-wall-clock results with the normal mission scene:
+On an Apple M1 Max, the 284.45-second Alpha tutorial log at 1280×720 produced
+these measured wall-clock results with the corrected default scene:
 
 | Output | Media | Frames | Render time | Throughput | Size |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| H.264 MP4 | 30 s | 900 | 3.84 s | 234 frames/s | 1.93 MB |
-| Animated GIF | 10 s | 300 | 13.78 s | 22 frames/s | 1.00 MB |
-| Lossless PNG | one frame | 1 | 0.25 s | n/a | 1.80 MB |
+| H.264 MP4, default 1× | 284.47 s | 4,267 | 14.53 s | 294 frames/s | 10.13 MB |
+| H.264 MP4, `--warp 10` | 28.47 s | 427 | 1.61 s | 265 frames/s | 1.29 MB |
+| Animated GIF excerpt | 10 s | 150 | 6.63 s | 23 frames/s | 1.00 MB |
+| Lossless PNG | one frame | 1 | 0.23 s | n/a | 1.80 MB |
 
-That MP4 measurement projects the complete 284.45-second Alpha log at the
-default 30 fps to roughly 36 seconds of rendering. `--warp 10` reduces it to
-about 854 frames and roughly 4 seconds on the same machine. Scene complexity,
-resolution, output format, encoder build, and hardware affect throughput; GIF
-is substantially slower than H.264 MP4 in this test.
+alogview is interactive rather than an exporter: it draws the current screen
+on demand and playback takes approximately `log duration / warp`. Watching
+this Alpha log in alogview therefore takes about 284.45 seconds at 1× or 28.45
+seconds at 10×. alog2media completed the corresponding MP4 exports in 14.53
+and 1.61 seconds, about 19.6× and 17.7× faster than watching them. This is a
+workflow comparison, not a renderer-only benchmark: alogview does not encode
+media and may draw fewer frames at its GUI refresh rate.
+
+Scene complexity, resolution, output format, encoder build, and hardware
+affect throughput. GIF encoding is substantially slower than H.264 MP4.
 
 ## Install
 

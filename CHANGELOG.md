@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Keep the coordinate grid off by default; use `--grid auto` to follow a
+  mission's `hash_viewable` setting or `--grid on` to force it on.
+- Apply the first logged vehicle type, color, and length to earlier navigation
+  samples, matching alogview metadata discovery and preventing an oversized
+  fallback hull before the first node report.
+- Correct the documented full-log estimates to distinguish the 30 fps
+  benchmark from the 15 fps product default, and add measured alogview
+  playback comparisons.
+
 ## 0.3.2 - 2026-08-03
 
 - Ignore invalid negative pre-start records when calculating the default media
