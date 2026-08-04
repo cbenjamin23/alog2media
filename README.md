@@ -15,7 +15,7 @@ The log is always the first argument. The zero-option form writes
 `./mission.mp4`; the output suffix selects MP4, GIF, or PNG. Run
 `alog2media -h` for the complete, coherent option reference.
 
-The current release is `v0.3.2`. It is a native C++/CMake package. The
+The current release is `v0.3.3`. It is a native C++/CMake package. The
 supported dependency baseline is official MOOS-IvP commit
 `174bd7340c33b43e96e1b7eb1ef57aae4df385c9`; CI validates macOS and
 displayless Linux against that revision.
@@ -154,7 +154,7 @@ produce MP4.
 Clone the release and supported MOOS-IvP revision:
 
 ```bash
-git clone --branch v0.3.2 https://github.com/cbenjamin23/alog2media.git
+git clone --branch v0.3.3 https://github.com/cbenjamin23/alog2media.git
 git clone https://github.com/moos-ivp/moos-ivp.git
 git -C moos-ivp checkout 174bd7340c33b43e96e1b7eb1ef57aae4df385c9
 cd moos-ivp

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.3 - 2026-08-03
 
 - Keep the coordinate grid off by default; use `--grid auto` to follow a
   mission's `hash_viewable` setting or `--grid on` to force it on.
