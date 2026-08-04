@@ -199,6 +199,27 @@ void VehicleTrack::finalize() {
                    [](const TimedRecord& left, const TimedRecord& right) {
                      return left.time < right.time;
                    });
+
+  // alogview treats vehicle type, color, and length as log metadata: its
+  // splitter discovers the first available NODE_REPORT_LOCAL fields before
+  // playback starts. Do the same so NAV_X/Y samples that precede the first
+  // node report do not render through MarineViewer's unscaled 100-metre AUV
+  // fallback. Runtime fields such as mode and all-stop remain time-local.
+  presentation_type_.clear();
+  presentation_color_.clear();
+  presentation_length_.reset();
+  for(const TimedRecord& sample : reports_) {
+    if(presentation_type_.empty() && !sample.record.getType().empty())
+      presentation_type_ = sample.record.getType();
+    if(presentation_color_.empty() && !sample.record.getColor().empty())
+      presentation_color_ = sample.record.getColor();
+    if(!presentation_length_ && sample.record.isSetLength())
+      presentation_length_ = sample.record.getLength();
+    if(!presentation_type_.empty() && !presentation_color_.empty() &&
+       presentation_length_) {
+      break;
+    }
+  }
 }
 
 std::optional<NodeRecord> VehicleTrack::recordAt(double time) const {
@@ -228,6 +249,12 @@ std::optional<NodeRecord> VehicleTrack::recordAt(double time) const {
     if(!record.isSetLength() && sample->record.isSetLength())
       record.setLength(sample->record.getLength());
   }
+  if(record.getType().empty() && !presentation_type_.empty())
+    record.setType(presentation_type_);
+  if(record.getColor().empty() && !presentation_color_.empty())
+    record.setColor(presentation_color_);
+  if(!record.isSetLength() && presentation_length_)
+    record.setLength(*presentation_length_);
   record.setX(x.valueAt(time));
   record.setY(y.valueAt(time));
   if(!heading.empty() && time >= heading.minTime())

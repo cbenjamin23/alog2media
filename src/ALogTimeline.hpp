@@ -58,6 +58,9 @@ class VehicleTrack {
 
   std::string name_;
   std::vector<TimedRecord> reports_;
+  std::string presentation_type_;
+  std::string presentation_color_;
+  std::optional<double> presentation_length_;
 };
 
 class ALogTimeline {

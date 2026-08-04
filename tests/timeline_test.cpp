@@ -43,9 +43,11 @@ int main(int argc, char* argv[]) {
   require(alpha_early && closeTo(alpha_early->getX(), 1) &&
               closeTo(alpha_early->getY(), 2),
           "vehicle positions use sample-and-hold");
-  require(alpha_early && alpha_early->getType().empty() &&
-              alpha_early->getColor().empty() && !alpha_early->isSetLength(),
-          "later vehicle presentation metadata does not leak backward");
+  require(alpha_early && alpha_early->getType() == "kayak" &&
+              alpha_early->getColor() == "yellow" &&
+              alpha_early->isSetLength() &&
+              closeTo(alpha_early->getLength(), 4),
+          "static vehicle presentation metadata is available before its first report");
   const auto alpha_same_time = alpha->second.recordAt(0.2);
   require(alpha_same_time && closeTo(alpha_same_time->getX(), 5) &&
               closeTo(alpha_same_time->getY(), 6) &&
