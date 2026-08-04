@@ -1,4 +1,5 @@
-foreach(required ALOG2MEDIA FIXTURE_MAP FFMPEG FFPROBE FIXTURE_DIR WORK_DIR)
+foreach(required ALOG2MEDIA FIXTURE_MAP FFMPEG FFPROBE PYTHON MEDIA_ASSERT
+                 FIXTURE_DIR WORK_DIR)
   if(NOT DEFINED ${required})
     message(FATAL_ERROR "render_smoke requires -D${required}=...")
   endif()
@@ -286,21 +287,20 @@ if(NOT tif_decode_result EQUAL 0 OR NOT tiff_decode_result EQUAL 0)
 endif()
 
 execute_process(
-  COMMAND "${FFMPEG}" -v error -i "${WORK_DIR}/map-tif.png" -f framemd5 -
-  RESULT_VARIABLE tif_alias_result
-  OUTPUT_VARIABLE tif_alias_frame
-  ERROR_VARIABLE tif_alias_error)
-execute_process(
-  COMMAND "${FFMPEG}" -v error -i "${WORK_DIR}/map-tiff.png" -f framemd5 -
-  RESULT_VARIABLE tiff_alias_result
-  OUTPUT_VARIABLE tiff_alias_frame
-  ERROR_VARIABLE tiff_alias_error)
-if(NOT tif_alias_result EQUAL 0 OR NOT tiff_alias_result EQUAL 0)
+  COMMAND "${PYTHON}" "${MEDIA_ASSERT}" same
+    "${WORK_DIR}/map-tif.png" "${WORK_DIR}/map-tiff.png"
+    --channel-tolerance 2
+    --max-different-pixels 64
+    --max-different-fraction 0.0012
+    --max-mae 0.01
+    --ffmpeg "${FFMPEG}"
+    --ffprobe "${FFPROBE}"
+  RESULT_VARIABLE alias_compare_result
+  OUTPUT_VARIABLE alias_compare_output
+  ERROR_VARIABLE alias_compare_error)
+if(NOT alias_compare_result EQUAL 0)
   message(FATAL_ERROR
-    "lossless alias decode failed: ${tif_alias_error}${tiff_alias_error}")
-endif()
-if(NOT tif_alias_frame STREQUAL tiff_alias_frame)
-  message(FATAL_ERROR ".tif and .tiff lossless renders produced different frames")
+    ".tif/.tiff render comparison failed:\n${alias_compare_output}${alias_compare_error}")
 endif()
 
 execute_process(

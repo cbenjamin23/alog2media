@@ -308,13 +308,16 @@ if(BUILD_TESTING)
   find_program(FFMPEG_EXECUTABLE ffmpeg)
   find_program(FFPROBE_EXECUTABLE ffprobe)
   find_program(PYTHON3_EXECUTABLE python3)
-  if((APPLE OR UNIX) AND FFMPEG_EXECUTABLE AND FFPROBE_EXECUTABLE)
+  if((APPLE OR UNIX) AND FFMPEG_EXECUTABLE AND FFPROBE_EXECUTABLE AND
+     PYTHON3_EXECUTABLE)
     add_test(NAME render_smoke
       COMMAND ${CMAKE_COMMAND}
         -DALOG2MEDIA=$<TARGET_FILE:alog2media>
         -DFIXTURE_MAP=$<TARGET_FILE:fixture_map>
         -DFFMPEG=${FFMPEG_EXECUTABLE}
         -DFFPROBE=${FFPROBE_EXECUTABLE}
+        -DPYTHON=${PYTHON3_EXECUTABLE}
+        -DMEDIA_ASSERT=${PROJECT_SOURCE_DIR}/tests/proof/media_assert.py
         -DFIXTURE_DIR=${PROJECT_SOURCE_DIR}/tests/fixtures
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/render-smoke
         -P ${PROJECT_SOURCE_DIR}/tests/render_smoke.cmake)

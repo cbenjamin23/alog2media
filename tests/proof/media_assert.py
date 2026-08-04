@@ -144,6 +144,11 @@ def probe_video(path: Path | str, ffprobe: str = "ffprobe") -> VideoInfo:
     duration = _number(stream.get("duration")) or _number(
         document.get("format", {}).get("duration")
     )
+    # Still-image demuxers commonly report one decoded frame and a nominal
+    # frame rate, but no duration. Normalize that image to a one-frame stream
+    # so decoded-pixel comparisons work for PNG proof artifacts too.
+    if duration is None and frame_count == 1 and fps is not None:
+        duration = float(Fraction(1, 1) / fps)
     if fps is None or frame_count is None or duration is None:
         raise MediaAssertionError(
             f"ffprobe returned incomplete timing metadata for {media}: {stream}"
