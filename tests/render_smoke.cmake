@@ -100,6 +100,11 @@ if(selected_log_at EQUAL -1)
   message(FATAL_ERROR
     "automatic input selection was not reported:\n${automatic_output}")
 endif()
+string(FIND "${automatic_error}" "no usable MISSION_HASH" fallback_warning_at)
+if(fallback_warning_at EQUAL -1)
+  message(FATAL_ERROR
+    "legacy automatic input did not report its mtime fallback:\n${automatic_error}")
+endif()
 
 execute_process(
   COMMAND "${ALOG2MEDIA}"

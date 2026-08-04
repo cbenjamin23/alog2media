@@ -27,6 +27,11 @@ Configuration precedence is:
 Video timing separately uses explicit `--warp`, then mission
 `MOOSTimeWarp`, then a warned `1` fallback.
 
+With no explicit input, `LogDiscovery` groups community logs by
+`MISSION_HASH`, ranks groups by their logged UTC start, and selects the newest
+group's authoritative `REGION_INFO` scene log. A warned modification-time
+fallback supports older logs that contain no usable mission identity.
+
 The natural defaults are the mission viewport, grid off, labels on, logged
 geometry on, and configured recent trails. `--grid auto` opts into the mission
 grid setting.

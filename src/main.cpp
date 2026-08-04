@@ -57,6 +57,12 @@ int run(const alog2media::Options& options) {
 
   FileState discovered_state;
   if(options.input_discovered) {
+    if(options.input_discovery_used_mtime_fallback) {
+      std::cerr << "alog2media: warning: discovered logs contain no usable "
+                   "MISSION_HASH; using modification times to identify the "
+                   "latest run. Pass an .alog path explicitly if that choice "
+                   "is not intended.\n";
+    }
     std::cout << "Using latest log: " << options.input << "\n";
     discovered_state = fileState(options.input);
     std::this_thread::sleep_for(std::chrono::milliseconds(250));

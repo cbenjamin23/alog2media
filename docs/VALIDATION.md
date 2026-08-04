@@ -28,8 +28,9 @@ env -u DISPLAY -u WAYLAND_DISPLAY \
 
 ## What is proved
 
-- unordered CLI parsing, bounded latest-log discovery, ambiguity rejection,
-  help/version startup, and timeline ordering
+- unordered CLI parsing, bounded `MISSION_HASH` run discovery, warned legacy
+  modification-time fallback, ambiguity rejection, help/version startup, and
+  timeline ordering
 - rejection of invalid negative startup timestamps
 - navigation and node-report replay, including metadata before the first
   node report and LAT/LON conversion
@@ -58,7 +59,7 @@ Private logs and third-party maps are not committed.
 | Shadow harness `turn_north_shadow_pass` | Both vehicles and the north-turn sequence rendered; mission evaluation passed |
 | Charlie concentric figure eight | Both vehicles and both figure-eight seglists rendered with the logged startup camera |
 | Alpha tutorial | With no input argument, the latest `.alog`, mission, and `forrest19.tif` were discovered; malformed negative startup records were ignored; the grid remained off and the 4 m kayak was correctly scaled before its first node report |
-| Four-vehicle COLAVD lanes | Shared pMarineViewer commands did not promote vehicle logs; shoreside was selected and `MOOSTimeWarp = 10` produced a measured 29.4-second MP4 from a 293.36-second log span |
+| Four-vehicle COLAVD lanes | Two five-community runs were separated by `MISSION_HASH` rather than staggered file completion times; the newer shoreside log was selected and `MOOSTimeWarp = 10` produced a measured 29.4-second MP4 from a 293.36-second log span |
 
 Representative frames are also checked against a separately compiled
 offscreen `PMV_Viewer.cpp` compositor. The figure-eight comparison was

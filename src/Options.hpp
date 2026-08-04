@@ -27,6 +27,7 @@ enum class TrailsMode {
 struct Options {
   std::filesystem::path input;
   bool input_discovered = false;
+  bool input_discovery_used_mtime_fallback = false;
   std::filesystem::path output;
   OutputFormat output_format = OutputFormat::mp4;
   std::optional<std::filesystem::path> mission;

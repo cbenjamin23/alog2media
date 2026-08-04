@@ -71,18 +71,24 @@ int main() {
 
   writeLog(workspace.path(), "older/arbitrary-name.alog",
            "0 DB_TIME MOOSDB_old 1000\n"
+           "0.5 MISSION_HASH pMarineViewer "
+           "mhash=older-run,utc=1000.00\n"
            "1 REGION_INFO pMarineViewer zoom=1\n",
-           baseline);
+           baseline + std::chrono::minutes(30));
   writeLog(workspace.path(), "new-run/vehicle.ALOG",
            "0 DB_TIME MOOSDB_alpha 1000\n"
+           "0.1 MISSION_HASH pNodeReporter "
+           "utc=2000.00,mhash=newest-run\n"
            "0.5 HELM_MAP_CLEAR pMarineViewer false\n"
            "1 NODE_REPORT_LOCAL pNodeReporter NAME=alpha,X=0,Y=0\n",
            baseline + std::chrono::minutes(10));
   const auto scene = writeLog(
       workspace.path(), "new-run/custom-scene.alog",
       "0 DB_TIME MOOSDB_viewer 1000\n"
+      "0.1 MISSION_HASH pMarineViewer "
+      "mhash=newest-run,utc=2000.00\n"
       "1 REGION_INFO pMarineViewer zoom=1,pan_x=0,pan_y=0\n",
-      baseline + std::chrono::minutes(10) + std::chrono::seconds(1));
+      baseline + std::chrono::minutes(20));
 
   const auto malformed = workspace.path() / "new-run/not-really.alog";
   {
@@ -100,18 +106,77 @@ int main() {
 
   require(alog2media::hasALogExtension("mission.ALOG"),
           "the .alog extension is case-insensitive");
-  require(alog2media::discoverLatestLog(workspace.path()) == scene,
-          "the latest run's unique scene-bearing log is selected without "
-          "filename-prefix assumptions or promotion from shared "
-          "pMarineViewer commands");
+  const auto hashed =
+      alog2media::discoverLatestLogWithDetails(workspace.path());
+  require(hashed.path == scene && !hashed.used_mtime_fallback,
+          "MISSION_HASH UTC selects the newest run and its unique REGION_INFO "
+          "log despite inverted and widely staggered modification times");
 
   const auto competing = writeLog(
       workspace.path(), "new-run/another-scene.alog",
-      "0 REGION_INFO pMarineViewer zoom=2\n",
+      "0 MISSION_HASH pMarineViewer mhash=newest-run,utc=2000.00\n"
+      "1 REGION_INFO pMarineViewer zoom=2\n",
       baseline + std::chrono::minutes(10) + std::chrono::seconds(2));
   (void)competing;
   require(discoveryFails(workspace.path(), "more than one equally plausible"),
-          "equally plausible logs in the latest run are rejected as ambiguous");
+          "multiple REGION_INFO logs in one hash-identified run are rejected");
+
+  TemporaryDirectory legacy;
+  writeLog(legacy.path(), "arbitrary/vehicle.alog",
+           "0 DB_TIME MOOSDB_alpha 1000\n"
+           "1 NODE_REPORT_LOCAL pNodeReporter NAME=alpha,X=0,Y=0\n",
+           baseline);
+  const auto legacy_scene = writeLog(
+      legacy.path(), "unrelated/scene.alog",
+      "0 MISSION_HASH pMarineViewer mhash=incomplete-without-utc\n"
+      "1 REGION_INFO pMarineViewer zoom=1\n",
+      baseline + std::chrono::seconds(2));
+  const auto fallback =
+      alog2media::discoverLatestLogWithDetails(legacy.path());
+  require(fallback.path == legacy_scene && fallback.used_mtime_fallback,
+          "logs without a complete MISSION_HASH retain the explicit "
+          "modification-time fallback marker");
+
+  const auto legacy_competing = writeLog(
+      legacy.path(), "other/scene.alog",
+      "0 REGION_INFO pMarineViewer zoom=2\n",
+      baseline + std::chrono::seconds(3));
+  (void)legacy_competing;
+  require(discoveryFails(legacy.path(), "more than one equally plausible"),
+          "the legacy modification-time fallback remains ambiguity-safe");
+
+  TemporaryDirectory conflicting;
+  writeLog(conflicting.path(), "conflicting.alog",
+           "0 MISSION_HASH pMarineViewer mhash=first,utc=3000\n"
+           "1 MISSION_HASH pMarineViewer mhash=second,utc=3001\n"
+           "2 REGION_INFO pMarineViewer zoom=1\n",
+           baseline);
+  require(discoveryFails(conflicting.path(), "conflicting MISSION_HASH"),
+          "one log cannot silently change mission identity");
+
+  TemporaryDirectory inconsistent;
+  writeLog(inconsistent.path(), "first.alog",
+           "0 MISSION_HASH pMarineViewer mhash=shared,utc=3500\n"
+           "1 REGION_INFO pMarineViewer zoom=1\n",
+           baseline);
+  writeLog(inconsistent.path(), "second.alog",
+           "0 MISSION_HASH pNodeReporter mhash=shared,utc=3501\n"
+           "1 NODE_REPORT_LOCAL pNodeReporter NAME=alpha,X=0,Y=0\n",
+           baseline + std::chrono::seconds(1));
+  require(discoveryFails(inconsistent.path(), "inconsistent UTC"),
+          "one mission hash cannot silently identify different start times");
+
+  TemporaryDirectory tied;
+  writeLog(tied.path(), "first.alog",
+           "0 MISSION_HASH pMarineViewer mhash=first,utc=4000\n"
+           "1 REGION_INFO pMarineViewer zoom=1\n",
+           baseline);
+  writeLog(tied.path(), "second.alog",
+           "0 MISSION_HASH pMarineViewer mhash=second,utc=4000\n"
+           "1 REGION_INFO pMarineViewer zoom=2\n",
+           baseline + std::chrono::hours(1));
+  require(discoveryFails(tied.path(), "more than one MISSION_HASH run"),
+          "different mission hashes with the same newest UTC are ambiguous");
 
   TemporaryDirectory empty;
   require(discoveryFails(empty.path(), "no readable .alog"),

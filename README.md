@@ -64,11 +64,12 @@ after installation.
 ## Scene recovery
 
 Automatic input discovery considers regular `.alog` files regardless of their
-directory or filename prefix. Files completed within five seconds form the
-latest run; logged `REGION_INFO` identifies its authoritative viewport when
-vehicle and shoreside logs coexist. Shared messages merely sourced from
-pMarineViewer do not promote a vehicle log. Symlinks are not followed. If the
-latest run has multiple equally plausible scene logs, pass one path explicitly.
+directory or filename prefix. It groups communities by their logged
+`MISSION_HASH`, ranks runs by the hash's UTC start, and uses the newest run's
+unique `REGION_INFO` log as the authoritative viewport. Shared messages merely
+sourced from pMarineViewer do not promote a vehicle log. Older logs without a
+usable `MISSION_HASH` use a warned modification-time fallback. Symlinks are not
+followed, and ambiguous choices require an explicit `.alog` path.
 
 By default, alog2media uses the logged map, datum, startup pan/zoom, vehicles,
 trails, and supported `VIEW_*` geometry. The coordinate grid is deliberately

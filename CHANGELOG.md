@@ -5,6 +5,8 @@
 - Accept an explicit `.alog` in any argument position.
 - With no input argument, discover the latest unambiguous scene-bearing `.alog`
   within the current mission tree without relying on log filename prefixes.
+- Group multi-community runs by `MISSION_HASH` and rank them by logged UTC;
+  retain a warned modification-time fallback for older logs.
 - Reject ambiguous latest-run sets and automatically selected logs that are
   still changing.
 - Do not mistake shared pMarineViewer commands in vehicle logs for

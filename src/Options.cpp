@@ -223,8 +223,12 @@ ParseResult parseOptions(int argc, char* argv[],
 
   if(result.options.input.empty()) {
     try {
-      result.options.input = discoverLatestLog(discovery_root);
+      const LogDiscoveryResult discovery =
+          discoverLatestLogWithDetails(discovery_root);
+      result.options.input = discovery.path;
       result.options.input_discovered = true;
+      result.options.input_discovery_used_mtime_fallback =
+          discovery.used_mtime_fallback;
     } catch(const std::exception& error) {
       throw UsageError(std::string(error.what()) +
                        "; pass an .alog path explicitly or run "
