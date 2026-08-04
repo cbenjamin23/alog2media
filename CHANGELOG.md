@@ -7,6 +7,8 @@
   within the current mission tree without relying on log filename prefixes.
 - Reject ambiguous latest-run sets and automatically selected logs that are
   still changing.
+- Do not mistake shared pMarineViewer commands in vehicle logs for
+  authoritative `REGION_INFO` scene evidence.
 
 ## 0.3.3 - 2026-08-03
 

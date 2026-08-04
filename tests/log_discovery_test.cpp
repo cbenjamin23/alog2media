@@ -75,6 +75,7 @@ int main() {
            baseline);
   writeLog(workspace.path(), "new-run/vehicle.ALOG",
            "0 DB_TIME MOOSDB_alpha 1000\n"
+           "0.5 HELM_MAP_CLEAR pMarineViewer false\n"
            "1 NODE_REPORT_LOCAL pNodeReporter NAME=alpha,X=0,Y=0\n",
            baseline + std::chrono::minutes(10));
   const auto scene = writeLog(
@@ -101,7 +102,8 @@ int main() {
           "the .alog extension is case-insensitive");
   require(alog2media::discoverLatestLog(workspace.path()) == scene,
           "the latest run's unique scene-bearing log is selected without "
-          "filename-prefix assumptions");
+          "filename-prefix assumptions or promotion from shared "
+          "pMarineViewer commands");
 
   const auto competing = writeLog(
       workspace.path(), "new-run/another-scene.alog",

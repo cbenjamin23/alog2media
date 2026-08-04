@@ -53,7 +53,7 @@ int inspectLog(const std::filesystem::path& path) {
     std::string source;
     if(!(fields >> timestamp >> variable >> source))
       continue;
-    if(variable == "REGION_INFO" || source == "pMarineViewer")
+    if(variable == "REGION_INFO")
       has_region_info = true;
     else if(variable.rfind("VIEW_", 0) == 0)
       has_view_event = true;

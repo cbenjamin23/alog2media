@@ -65,8 +65,9 @@ after installation.
 
 Automatic input discovery considers regular `.alog` files regardless of their
 directory or filename prefix. Files completed within five seconds form the
-latest run; logged pMarineViewer/`REGION_INFO` evidence identifies its scene
-log when vehicle and shoreside logs coexist. Symlinks are not followed. If the
+latest run; logged `REGION_INFO` identifies its authoritative viewport when
+vehicle and shoreside logs coexist. Shared messages merely sourced from
+pMarineViewer do not promote a vehicle log. Symlinks are not followed. If the
 latest run has multiple equally plausible scene logs, pass one path explicitly.
 
 By default, alog2media uses the logged map, datum, startup pan/zoom, vehicles,
