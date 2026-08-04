@@ -12,6 +12,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 from fractions import Fraction
 from pathlib import Path
 from typing import Sequence
@@ -252,6 +253,16 @@ def _prepare_fixtures(
     _copy(fixtures / "basic.info", mission_info)
     _command([fixture_map, str(mission_map)])
 
+    automatic_root = input_root / "automatic input selection θ"
+    automatic_log_dir = automatic_root / "arbitrary folder name"
+    automatic_log_dir.mkdir(parents=True)
+    automatic_alog = automatic_log_dir / "newest scene.ALOG"
+    automatic_map = automatic_root / "basic.tif"
+    automatic_info = automatic_map.with_suffix(".info")
+    _copy(fixtures / "basic.alog", automatic_alog)
+    _copy(fixtures / "basic.info", automatic_info)
+    _command([fixture_map, str(automatic_map)])
+
     return {
         "basic_alog": basic_alog,
         "basic_map": basic_map,
@@ -262,7 +273,52 @@ def _prepare_fixtures(
         "geometry_mission": geometry_mission,
         "mission_alog": mission_alog,
         "mission_map": mission_map,
+        "automatic_root": automatic_root,
     }
+
+
+def _assert_active_discovery_rejected(
+    executable: str, fixture: Path, work: Path
+) -> None:
+    active_root = work / "active automatic input"
+    active_log_dir = active_root / "arbitrary live directory"
+    active_log_dir.mkdir(parents=True)
+    active_log = active_log_dir / "currently-writing.alog"
+    _copy(fixture, active_log)
+    output = work / "active-should-not-render.png"
+    command = [
+        executable,
+        "--map",
+        "none",
+        "--view",
+        "fit",
+        "--at",
+        "0.5",
+        "--output",
+        str(output),
+    ]
+    print(f"$ {shlex.join(command)} (cwd={active_root}; mutating input)", flush=True)
+    process = subprocess.Popen(
+        command,
+        cwd=active_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    deadline = time.monotonic() + 2.0
+    while process.poll() is None and time.monotonic() < deadline:
+        active_log.touch()
+        time.sleep(0.05)
+    stdout, stderr = process.communicate()
+    diagnostic = stdout + stderr
+    if process.returncode == 0:
+        raise ContractError("an automatically selected changing .alog was accepted")
+    if "still changing" not in diagnostic and "changed while" not in diagnostic:
+        raise ContractError(
+            "changing-log rejection lacked its diagnostic:\n" + diagnostic
+        )
+    if output.exists():
+        raise ContractError("changing-log rejection left an output file")
 
 
 def run_contract(
@@ -295,7 +351,7 @@ def run_contract(
     before = _snapshot(input_root)
     _assert_read_only(before)
 
-    # The product's headline contract is a single positional argument. Keep a
+    # An explicit input remains the simplest deterministic contract. Keep a
     # same-directory basic.tif matching REGION_INFO and prove that the natural
     # defaults find it, select mission view, and produce the default MP4 name.
     default_output = output_root / paths["basic_alog"].with_suffix(".mp4").name
@@ -308,6 +364,28 @@ def run_contract(
         width=1280,
         height=720,
         fps=Fraction(15, 1),
+    )
+
+    automatic_output = output_root / "automatically selected.png"
+    _command(
+        [
+            executable,
+            "--at",
+            "0.5",
+            "--size",
+            "319x179",
+            "--output",
+            str(automatic_output),
+            "--force",
+        ],
+        cwd=paths["automatic_root"],
+    )
+    if not automatic_output.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ContractError("automatically selected output is not a PNG")
+    decode_rgb_image(automatic_output, 319, 179, ffmpeg=ffmpeg)
+
+    _assert_active_discovery_rejected(
+        executable, paths["basic_alog"], work
     )
     if default_info.frame_count < 2:
         raise ContractError("zero-option default render did not animate")
@@ -905,7 +983,8 @@ def run_contract(
         "unchanged; no _alvtmp cache was created."
     )
     print(
-        "PASS: zero-option defaults, MP4/GIF metadata, lossless PNG snapshots, "
+        "PASS: unordered and automatic input selection, active-log rejection, "
+        "zero-option defaults, MP4/GIF metadata, lossless PNG snapshots, "
         ".tif/.tiff frame identity, animation, and mission geometry precedence are proven."
     )
     print(

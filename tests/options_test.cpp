@@ -59,8 +59,19 @@ int main() {
           "--map rejects non-TIFF extensions");
   require(rejects({"alog2media", "mission.alog", "--mission", "viewer.txt"}),
           "--mission rejects non-.moos extensions");
-  require(rejects({"alog2media", "--grid", "off", "mission.alog"}),
-          "input must be first");
+  const auto unordered =
+      parse({"alog2media", "--grid", "off", "mission.alog"});
+  require(unordered.options.input == "mission.alog",
+          "the input may follow options");
+  const auto interleaved = parse(
+      {"alog2media", "--grid", "off", "mission.alog", "--labels", "on"});
+  require(interleaved.options.input == "mission.alog" &&
+              interleaved.options.labels == alog2media::ToggleMode::on,
+          "options may appear on both sides of the input");
+  require(rejects({"alog2media", "first.alog", "second.alog"}),
+          "multiple explicit inputs are rejected");
+  require(rejects({"alog2media", "mission.txt"}),
+          "unknown positional arguments are rejected");
   require(rejects({"alog2media", "mission.alog", "--duration", "2", "--end", "3"}),
           "--duration conflicts with --end");
   require(rejects({"alog2media", "mission.alog", "--size", "1279x720"}),
@@ -112,6 +123,8 @@ int main() {
   }
 
   const auto defaults = parse({"alog2media", "mission.alog"});
+  require(!defaults.options.input_discovered,
+          "an explicit input is never marked as discovered");
   require(defaults.options.view == alog2media::ViewMode::mission,
           "mission viewport is the default");
   require(defaults.options.map_mode == alog2media::MapMode::automatic,

@@ -87,6 +87,7 @@ add_executable(alog2media
   src/GeometryReplay.cpp
   src/HeadlessSceneViewer.cpp
   src/HeadlessText.cpp
+  src/LogDiscovery.cpp
   src/MediaRenderer.cpp
   src/MissionConfig.cpp
   src/Options.cpp
@@ -163,7 +164,10 @@ install(FILES LICENSE CHANGELOG.md THIRD_PARTY_NOTICES.md README.md
   DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
 if(BUILD_TESTING)
-  add_executable(options_test tests/options_test.cpp src/Options.cpp)
+  add_executable(options_test
+    tests/options_test.cpp
+    src/LogDiscovery.cpp
+    src/Options.cpp)
   target_include_directories(options_test PRIVATE src)
   target_compile_definitions(options_test PRIVATE
     ALOG2MEDIA_VERSION="${PROJECT_VERSION}")
@@ -210,6 +214,14 @@ if(BUILD_TESTING)
     ${IVP_mbutil_LIBRARY}
     m)
   add_test(NAME geometry_replay COMMAND geometry_replay_test)
+
+  add_executable(log_discovery_test
+    tests/log_discovery_test.cpp
+    src/LogDiscovery.cpp)
+  target_include_directories(log_discovery_test PRIVATE src)
+  target_compile_options(log_discovery_test PRIVATE
+    -Wall -Wextra -Wpedantic)
+  add_test(NAME log_discovery COMMAND log_discovery_test)
 
   add_executable(vehicle_label_test
     tests/vehicle_label_test.cpp

@@ -6,14 +6,17 @@ no desktop, window chrome, controls, plots, or alogview footer.
 
 ```bash
 alog2media mission.alog
+alog2media -o latest.mp4
 alog2media mission.alog -o mission.gif
 alog2media mission.alog --at 120 -o scene.png
 alog2media mission.alog --start 20 --duration 30 --warp 4 -o excerpt.mp4
 ```
 
-The `.alog` is always the first argument. With no options, the command writes
-`INPUT_BASENAME.mp4` in the current directory. The output suffix selects the
-format.
+The `.alog` may appear before or after options. When omitted, alog2media finds
+the latest unambiguous scene log in the current directory or up to two levels
+below it, prints the selected path, and refuses ambiguous or changing logs.
+An explicit path is always used directly. With no output option, the command
+writes `INPUT_BASENAME.mp4`; the output suffix selects the format.
 
 ## Install
 
@@ -59,6 +62,12 @@ The build script finds a sibling `moos-ivp` checkout. Otherwise pass
 after installation.
 
 ## Scene recovery
+
+Automatic input discovery considers regular `.alog` files regardless of their
+directory or filename prefix. Files completed within five seconds form the
+latest run; logged pMarineViewer/`REGION_INFO` evidence identifies its scene
+log when vehicle and shoreside logs coexist. Symlinks are not followed. If the
+latest run has multiple equally plausible scene logs, pass one path explicitly.
 
 By default, alog2media uses the logged map, datum, startup pan/zoom, vehicles,
 trails, and supported `VIEW_*` geometry. The coordinate grid is deliberately

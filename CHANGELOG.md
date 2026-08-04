@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Accept an explicit `.alog` in any argument position.
+- With no input argument, discover the latest unambiguous scene-bearing `.alog`
+  within the current mission tree without relying on log filename prefixes.
+- Reject ambiguous latest-run sets and automatically selected logs that are
+  still changing.
+
 ## 0.3.3 - 2026-08-03
 
 - Keep the coordinate grid off by default; use `--grid auto` to follow a

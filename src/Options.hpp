@@ -26,6 +26,7 @@ enum class TrailsMode {
 
 struct Options {
   std::filesystem::path input;
+  bool input_discovered = false;
   std::filesystem::path output;
   OutputFormat output_format = OutputFormat::mp4;
   std::optional<std::filesystem::path> mission;
@@ -60,6 +61,8 @@ class UsageError : public std::runtime_error {
 };
 
 ParseResult parseOptions(int argc, char* argv[]);
+ParseResult parseOptions(int argc, char* argv[],
+                         const std::filesystem::path& discovery_root);
 std::string helpText();
 std::string versionText();
 

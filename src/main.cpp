@@ -9,8 +9,31 @@
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 
 namespace {
+
+struct FileState {
+  std::uintmax_t size = 0;
+  std::filesystem::file_time_type modified;
+};
+
+FileState fileState(const std::filesystem::path& path) {
+  std::error_code error;
+  const std::uintmax_t size = std::filesystem::file_size(path, error);
+  if(error)
+    throw std::runtime_error("could not inspect automatically selected .alog: " +
+                             error.message());
+  const auto modified = std::filesystem::last_write_time(path, error);
+  if(error)
+    throw std::runtime_error("could not inspect automatically selected .alog: " +
+                             error.message());
+  return {size, modified};
+}
+
+bool operator==(const FileState& left, const FileState& right) {
+  return left.size == right.size && left.modified == right.modified;
+}
 
 int run(const alog2media::Options& options) {
   if(!std::filesystem::is_regular_file(options.input))
@@ -24,7 +47,25 @@ int run(const alog2media::Options& options) {
   if(!alog2media::ffmpegAvailable())
     throw std::runtime_error("FFmpeg was not found on PATH");
 
+  FileState discovered_state;
+  if(options.input_discovered) {
+    std::cout << "Using latest log: " << options.input << "\n";
+    discovered_state = fileState(options.input);
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    if(!(discovered_state == fileState(options.input))) {
+      throw std::runtime_error(
+          "automatically selected .alog is still changing; wait for logging "
+          "to finish or pass an .alog path explicitly");
+    }
+  }
+
   alog2media::MediaRenderer renderer(options);
+  if(options.input_discovered &&
+     !(discovered_state == fileState(options.input))) {
+    throw std::runtime_error(
+        "automatically selected .alog changed while it was being loaded; "
+        "wait for logging to finish or pass an .alog path explicitly");
+  }
   const alog2media::RenderMetadata& metadata = renderer.metadata();
 
   const bool snapshot = options.output_format == alog2media::OutputFormat::png;

@@ -72,6 +72,33 @@ run_render(tif mp4 map-tif)
 run_render(tiff mp4 map-tiff)
 run_render(tiff gif animation)
 
+# With no positional input, discover a regular .alog regardless of filename
+# prefix or extension case. Options may precede the discovered input.
+file(MAKE_DIRECTORY "${WORK_DIR}/automatic-input/arbitrary-directory")
+file(COPY_FILE "${WORK_DIR}/basic.alog"
+     "${WORK_DIR}/automatic-input/arbitrary-directory/latest.ALOG")
+execute_process(
+  COMMAND "${ALOG2MEDIA}"
+    --map "${WORK_DIR}/basic.tif"
+    --view fit
+    --at 0.5
+    --size 320x180
+    --output "${WORK_DIR}/automatic-input.png"
+    --force
+  WORKING_DIRECTORY "${WORK_DIR}/automatic-input"
+  RESULT_VARIABLE automatic_result
+  OUTPUT_VARIABLE automatic_output
+  ERROR_VARIABLE automatic_error)
+if(NOT automatic_result EQUAL 0)
+  message(FATAL_ERROR
+    "automatic input render failed:\n${automatic_output}\n${automatic_error}")
+endif()
+string(FIND "${automatic_output}" "Using latest log:" selected_log_at)
+if(selected_log_at EQUAL -1)
+  message(FATAL_ERROR
+    "automatic input selection was not reported:\n${automatic_output}")
+endif()
+
 execute_process(
   COMMAND "${ALOG2MEDIA}"
     "${WORK_DIR}/custom-mission/logs/custom.alog"

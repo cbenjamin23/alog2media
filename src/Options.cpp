@@ -1,5 +1,7 @@
 #include "Options.hpp"
 
+#include "LogDiscovery.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -73,6 +75,11 @@ bool isValueOption(const std::string& argument, const std::string& option) {
 }  // namespace
 
 ParseResult parseOptions(int argc, char* argv[]) {
+  return parseOptions(argc, argv, std::filesystem::current_path());
+}
+
+ParseResult parseOptions(int argc, char* argv[],
+                         const std::filesystem::path& discovery_root) {
   ParseResult result;
   bool fps_set = false;
   bool warp_set = false;
@@ -89,18 +96,7 @@ ParseResult parseOptions(int argc, char* argv[]) {
     }
   }
 
-  if(argc < 2)
-    throw UsageError("missing INPUT.alog; run 'alog2media --help' for usage");
-
-  const std::string first = argv[1];
-  if(first.empty() || first.front() == '-')
-    throw UsageError("INPUT.alog must be the first argument");
-
-  result.options.input = first;
-  if(!hasExtension(result.options.input, {".alog"}))
-    throw UsageError("input must end in .alog");
-
-  for(int index = 2; index < argc; ++index) {
+  for(int index = 1; index < argc; ++index) {
     const std::string argument = argv[index];
     std::string value;
 
@@ -213,8 +209,27 @@ ParseResult parseOptions(int argc, char* argv[]) {
       result.options.force = true;
     } else if(argument == "-v" || argument == "--verbose") {
       result.options.verbose = true;
+    } else if(hasALogExtension(argument)) {
+      if(!result.options.input.empty()) {
+        throw UsageError("more than one input .alog was provided: '" +
+                         result.options.input.string() + "' and '" + argument +
+                         "'");
+      }
+      result.options.input = argument;
     } else {
-      throw UsageError("unknown option '" + argument + "'; run 'alog2media --help'");
+      throw UsageError("bad argument '" + argument +
+                       "'; expected a known option or one .alog path");
+    }
+  }
+
+  if(result.options.input.empty()) {
+    try {
+      result.options.input = discoverLatestLog(discovery_root);
+      result.options.input_discovered = true;
+    } catch(const std::exception& error) {
+      throw UsageError(std::string(error.what()) +
+                       "; pass an .alog path explicitly or run "
+                       "'alog2media --help'");
     }
   }
 
@@ -261,10 +276,12 @@ std::string helpText() {
   return R"HELP(alog2media - render the pMarineViewer map scene from a MOOS log
 
 Usage:
-  alog2media INPUT.alog [OPTIONS]
+  alog2media [OPTIONS] [INPUT.alog]
 
 Arguments:
-  INPUT.alog                 MOOS .alog file to render. It must be first.
+  INPUT.alog                 MOOS .alog file to render, in any argument position.
+                             When omitted, use the latest unambiguous scene log
+                             within two levels of the current directory.
 
 Output:
   -o, --output FILE          Destination .mp4, .gif, or .png file.
@@ -308,12 +325,14 @@ General:
   -h, --help                 Show this complete option reference.
   -V, --version              Show version and renderer-backend information.
 
-Options may use either '--option value' or '--option=value'. The output suffix
-selects MP4, GIF, or single-frame PNG encoding. Explicit CLI scene options
-override mission-file settings. FFmpeg must be available on PATH.
+Options may appear before or after INPUT.alog and may use either '--option value'
+or '--option=value'. The output suffix selects MP4, GIF, or single-frame PNG
+encoding. Explicit CLI scene options override mission-file settings. FFmpeg
+must be available on PATH.
 
 Examples:
   alog2media mission.alog
+  alog2media -o latest.mp4
   alog2media mission.alog --at 120 -o scene.png
   alog2media mission.alog -o clip.gif --start 20 --duration 30 --warp 4
   alog2media mission.alog --mission mission.moos --grid auto --trails 30

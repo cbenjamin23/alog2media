@@ -28,7 +28,8 @@ env -u DISPLAY -u WAYLAND_DISPLAY \
 
 ## What is proved
 
-- CLI parsing, help/version startup, and timeline ordering
+- unordered CLI parsing, bounded latest-log discovery, ambiguity rejection,
+  help/version startup, and timeline ordering
 - rejection of invalid negative startup timestamps
 - navigation and node-report replay, including metadata before the first
   node report and LAT/LON conversion
@@ -55,7 +56,7 @@ Private logs and third-party maps are not committed.
 | --- | --- |
 | Shadow harness `turn_north_shadow_pass` | Both vehicles and the north-turn sequence rendered; mission evaluation passed |
 | Charlie concentric figure eight | Both vehicles and both figure-eight seglists rendered with the logged startup camera |
-| Alpha tutorial | Mission and `forrest19.tif` were discovered; malformed negative startup records were ignored; the grid remained off and the 4 m kayak was correctly scaled before its first node report |
+| Alpha tutorial | With no input argument, the latest `.alog`, mission, and `forrest19.tif` were discovered; malformed negative startup records were ignored; the grid remained off and the 4 m kayak was correctly scaled before its first node report |
 
 Representative frames are also checked against a separately compiled
 offscreen `PMV_Viewer.cpp` compositor. The figure-eight comparison was

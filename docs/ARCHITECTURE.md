@@ -6,7 +6,7 @@ test results belong in [VALIDATION.md](VALIDATION.md).
 
 ## Product contract
 
-`alog2media INPUT.alog [OPTIONS]` emits only the pMarineViewer navigation
+`alog2media [OPTIONS] [INPUT.alog]` emits only the pMarineViewer navigation
 viewport as H.264 MP4, animated GIF, or one lossless PNG frame. It requires no
 visible window, desktop recording, FLTK event loop, `DISPLAY`, or
 `WAYLAND_DISPLAY`.
