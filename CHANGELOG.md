@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.4 - 2026-08-04
 
 - Accept an explicit `.alog` in any argument position.
 - With no input argument, discover the latest unambiguous scene-bearing `.alog`

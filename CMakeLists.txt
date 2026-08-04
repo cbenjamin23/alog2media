@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(alog2media VERSION 0.3.3 LANGUAGES CXX)
+project(alog2media VERSION 0.3.4 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
