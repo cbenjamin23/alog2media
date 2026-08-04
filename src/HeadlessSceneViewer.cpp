@@ -10,6 +10,7 @@
 #include "ColorPack.h"
 #include "MBUtils.h"
 #include "MacroUtils.h"
+#include "VehicleLabel.hpp"
 #include "XYSegList.h"
 
 namespace alog2media {
@@ -378,28 +379,7 @@ void HeadlessSceneViewer::drawVehicle(const VehicleTrack& track) {
   const ColorPack name_color = m_vehi_settings.getColorVehicleName();
   const std::string names_mode = m_vehi_settings.getVehiclesNameMode();
   bool draw_name = labels_visible_ && names_mode != "off";
-  std::string display_name = track.name();
-
-  if(names_mode == "names+mode") {
-    const std::string mode = record.getMode();
-    const std::string allstop = record.getAllStop();
-    if(mode != "none" && mode != "unknown-mode")
-      display_name += " (" + mode + ")";
-    if(allstop != "clear")
-      display_name += " (" + allstop + ")";
-  } else if(names_mode == "names+shortmode") {
-    std::string mode = record.getMode();
-    const std::string allstop = record.getAllStop();
-    if(mode != "none" && mode != "unknown-mode")
-      display_name += " (" + modeShorten(mode) + ")";
-    if(allstop != "clear" && allstop != "n/a")
-      display_name += " (" + allstop + ")";
-  } else if(names_mode == "names+auxmode") {
-    const std::string mode = record.getModeAux();
-    display_name += mode.empty() ? " (no auxmode info)" : " (" + mode + ")";
-  } else if(names_mode == "names+depth") {
-    display_name += " (depth=" + doubleToStringX(record.getDepth(), 1) + ")";
-  }
+  std::string display_name = formatVehicleLabel(track.name(), names_mode, record);
 
   if(age > m_vehi_settings.getStaleReportThresh()) {
     display_name = track.name() + "(Stale Report: " +

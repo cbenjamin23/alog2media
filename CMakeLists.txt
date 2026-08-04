@@ -90,6 +90,7 @@ add_executable(alog2media
   src/MediaRenderer.cpp
   src/MissionConfig.cpp
   src/Options.cpp
+  src/VehicleLabel.cpp
   src/main.cpp)
 
 target_include_directories(alog2media PRIVATE
@@ -209,6 +210,21 @@ if(BUILD_TESTING)
     ${IVP_mbutil_LIBRARY}
     m)
   add_test(NAME geometry_replay COMMAND geometry_replay_test)
+
+  add_executable(vehicle_label_test
+    tests/vehicle_label_test.cpp
+    src/VehicleLabel.cpp)
+  target_include_directories(vehicle_label_test PRIVATE
+    src
+    "${MOOS_IVP_ROOT}/include/ivp")
+  target_compile_options(vehicle_label_test PRIVATE
+    -Wall -Wextra -Wpedantic)
+  target_link_libraries(vehicle_label_test PRIVATE
+    ${IVP_contacts_LIBRARY}
+    ${IVP_geometry_LIBRARY}
+    ${IVP_mbutil_LIBRARY}
+    m)
+  add_test(NAME vehicle_label COMMAND vehicle_label_test)
 
   add_executable(mission_config_test
     tests/mission_config_test.cpp
