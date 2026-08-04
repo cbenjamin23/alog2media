@@ -9,6 +9,9 @@
   still changing.
 - Do not mistake shared pMarineViewer commands in vehicle logs for
   authoritative `REGION_INFO` scene evidence.
+- Reproduce the original launch speed from a discovered mission's
+  `MOOSTimeWarp`; retain explicit `--warp` precedence and warn when falling
+  back to `1`.
 
 ## 0.3.3 - 2026-08-03
 

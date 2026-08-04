@@ -1,6 +1,7 @@
 ServerHost = localhost
 ServerPort = 9000
 Community = shoreside
+MOOSTimeWarp = 7.5
 
 LatOrigin = 42.358436
 LongOrigin = -71.087448

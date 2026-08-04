@@ -35,6 +35,14 @@ bool operator==(const FileState& left, const FileState& right) {
   return left.size == right.size && left.modified == right.modified;
 }
 
+const char* warpSourceName(alog2media::WarpSource source) {
+  if(source == alog2media::WarpSource::mission)
+    return "mission";
+  if(source == alog2media::WarpSource::explicit_option)
+    return "explicit";
+  return "fallback";
+}
+
 int run(const alog2media::Options& options) {
   if(!std::filesystem::is_regular_file(options.input))
     throw std::runtime_error("input .alog file does not exist or is not a regular file");
@@ -69,8 +77,14 @@ int run(const alog2media::Options& options) {
   const alog2media::RenderMetadata& metadata = renderer.metadata();
 
   const bool snapshot = options.output_format == alog2media::OutputFormat::png;
+  const double warp = metadata.warp;
+  if(!snapshot && metadata.warp_source == alog2media::WarpSource::fallback) {
+    std::cerr << "alog2media: warning: no valid mission MOOSTimeWarp was "
+                 "available; using 1 log second per output second. Pass "
+                 "--warp FACTOR to override.\n";
+  }
   const double media_duration = snapshot ? 0.0 :
-      (metadata.end - metadata.start) / options.warp;
+      (metadata.end - metadata.start) / warp;
   const std::uint64_t frame_count = snapshot ? 1 : std::max<std::uint64_t>(
       1, static_cast<std::uint64_t>(std::ceil(media_duration * options.fps)));
   if(frame_count > 100000000)
@@ -85,7 +99,8 @@ int run(const alog2media::Options& options) {
     std::cout << "  frames:   1 snapshot\n";
   else
     std::cout << "  frames:   " << frame_count << " at " << options.fps << " fps"
-              << " (" << options.warp << "x warp)\n";
+              << " (" << warp << "x warp, "
+              << warpSourceName(metadata.warp_source) << ")\n";
   std::cout
             << "  scene:    " << metadata.map << " via " << metadata.backend << "\n"
             << "  output:   " << options.output << "\n";
@@ -103,7 +118,7 @@ int run(const alog2media::Options& options) {
   for(std::uint64_t frame = 0; frame < frame_count; ++frame) {
     const double log_time = std::min(
         metadata.end,
-        metadata.start + (static_cast<double>(frame) * options.warp / options.fps));
+        metadata.start + (static_cast<double>(frame) * warp / options.fps));
     encoder.writeFrame(renderer.render(log_time));
 
     if(!snapshot &&

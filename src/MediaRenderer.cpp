@@ -244,6 +244,15 @@ class MediaRenderer::Impl {
                                   *mission_->longOrigin());
     }
 
+    metadata_.warp = options.warp;
+    metadata_.warp_source = options.warp_explicit
+                                ? WarpSource::explicit_option
+                                : WarpSource::fallback;
+    if(!options.warp_explicit && mission_ && mission_->moosTimeWarp()) {
+      metadata_.warp = *mission_->moosTimeWarp();
+      metadata_.warp_source = WarpSource::mission;
+    }
+
     metadata_.log_min = timeline_.minTime();
     metadata_.log_max = timeline_.maxTime();
     if(options.output_format == OutputFormat::png) {

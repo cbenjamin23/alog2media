@@ -76,6 +76,11 @@ int main() {
           "--duration conflicts with --end");
   require(rejects({"alog2media", "mission.alog", "--size", "1279x720"}),
           "odd H.264 dimensions are rejected");
+  const auto explicit_warp =
+      parse({"alog2media", "mission.alog", "--warp", "2.5"});
+  require(explicit_warp.options.warp_explicit &&
+              explicit_warp.options.warp == 2.5,
+          "--warp is retained as an explicit override");
 
   const auto png = parse({"alog2media", "mission.alog", "--output",
                           "snapshot.PNG", "--at", "12.5", "--size",
@@ -109,6 +114,10 @@ int main() {
               "Override automatic pMarineViewer mission discovery") !=
               std::string::npos,
           "help explains that --mission overrides discovery");
+  require(alog2media::helpText().find(
+              "MOOSTimeWarp; otherwise 1 with a warning") !=
+              std::string::npos,
+          "help explains automatic playback warp and its fallback");
   require(alog2media::helpText().find(".mp4, .gif, or .png") !=
               std::string::npos,
           "help documents every output suffix");
@@ -137,6 +146,8 @@ int main() {
           "geometry defaults to auto");
   require(defaults.options.trails == alog2media::TrailsMode::automatic,
           "trails default to auto");
+  require(!defaults.options.warp_explicit,
+          "an omitted --warp remains eligible for mission recovery");
 
   const auto toggles = parse({"alog2media", "mission.alog", "--grid", "on",
                               "--labels=off", "--geometry", "auto"});

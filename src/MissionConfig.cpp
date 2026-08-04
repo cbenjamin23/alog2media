@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <list>
 #include <sstream>
 #include <stdexcept>
@@ -99,6 +100,11 @@ MissionConfig MissionConfig::load(const std::filesystem::path& source) {
     config.lat_origin_ = origin;
   if(reader.GetValue("LongOrigin", origin))
     config.long_origin_ = origin;
+  double time_warp = 0;
+  if(reader.GetValue("MOOSTimeWarp", time_warp) &&
+     std::isfinite(time_warp) && time_warp > 0) {
+    config.moos_time_warp_ = time_warp;
+  }
 
   return config;
 }

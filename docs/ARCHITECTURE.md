@@ -24,6 +24,9 @@ Configuration precedence is:
 3. an automatically discovered or explicit pMarineViewer mission;
 4. alog2media defaults.
 
+Video timing separately uses explicit `--warp`, then mission
+`MOOSTimeWarp`, then a warned `1` fallback.
+
 The natural defaults are the mission viewport, grid off, labels on, logged
 geometry on, and configured recent trails. `--grid auto` opts into the mission
 grid setting.

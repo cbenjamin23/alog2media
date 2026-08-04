@@ -11,11 +11,15 @@
 
 namespace alog2media {
 
+enum class WarpSource { explicit_option, mission, fallback };
+
 struct RenderMetadata {
   double log_min = 0;
   double log_max = 0;
   double start = 0;
   double end = 0;
+  double warp = 1;
+  WarpSource warp_source = WarpSource::fallback;
   std::string map;
   std::string backend;
   std::optional<std::string> mission;

@@ -21,6 +21,7 @@ class MissionConfig {
   const std::vector<MissionParam>& params() const { return params_; }
   std::optional<double> latOrigin() const { return lat_origin_; }
   std::optional<double> longOrigin() const { return long_origin_; }
+  std::optional<double> moosTimeWarp() const { return moos_time_warp_; }
 
   // Return the last value for a parameter, matching its name without regard
   // to ASCII case. Repeated parameters retain their original order in params().
@@ -31,6 +32,7 @@ class MissionConfig {
   std::vector<MissionParam> params_;
   std::optional<double> lat_origin_;
   std::optional<double> long_origin_;
+  std::optional<double> moos_time_warp_;
 };
 
 // Discover the pMarineViewer mission associated with a log in the two layouts

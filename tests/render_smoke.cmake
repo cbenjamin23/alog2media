@@ -29,6 +29,7 @@ file(COPY_FILE "${WORK_DIR}/basic.info"
 file(WRITE "${WORK_DIR}/custom-mission/viewer.moos" [=[
 LatOrigin = 42.0
 LongOrigin = -71.0
+MOOSTimeWarp = 4
 ProcessConfig = pMarineViewer
 {
   tiff_file = maps/custom.tif
@@ -118,6 +119,98 @@ string(FIND "${custom_output}"
 if(custom_map_path EQUAL -1)
   message(FATAL_ERROR
     "custom map was not resolved through the mission:\n${custom_output}")
+endif()
+
+# Video defaults to the discovered mission's original launch warp. An explicit
+# --warp remains authoritative, and a log without a mission warns before
+# falling back to one log second per output second.
+execute_process(
+  COMMAND "${ALOG2MEDIA}"
+    "${WORK_DIR}/custom-mission/logs/custom.alog"
+    --start 0
+    --duration 1
+    --fps 4
+    --size 320x180
+    --output "${WORK_DIR}/mission-warp.mp4"
+    --force
+  RESULT_VARIABLE mission_warp_result
+  OUTPUT_VARIABLE mission_warp_output
+  ERROR_VARIABLE mission_warp_error)
+if(NOT mission_warp_result EQUAL 0)
+  message(FATAL_ERROR
+    "mission-warp render failed:\n${mission_warp_output}\n${mission_warp_error}")
+endif()
+string(FIND "${mission_warp_output}" "(4x warp, mission)" mission_warp_at)
+if(mission_warp_at EQUAL -1)
+  message(FATAL_ERROR
+    "mission warp was not reported:\n${mission_warp_output}")
+endif()
+
+execute_process(
+  COMMAND "${FFPROBE}" -v error -select_streams v:0 -count_frames
+    -show_entries stream=nb_read_frames,duration
+    -of default=noprint_wrappers=1 "${WORK_DIR}/mission-warp.mp4"
+  RESULT_VARIABLE mission_warp_probe_result
+  OUTPUT_VARIABLE mission_warp_probe_output
+  ERROR_VARIABLE mission_warp_probe_error)
+if(NOT mission_warp_probe_result EQUAL 0)
+  message(FATAL_ERROR
+    "mission-warp probe failed: ${mission_warp_probe_error}")
+endif()
+foreach(expected "nb_read_frames=1" "duration=0.250000")
+  string(FIND "${mission_warp_probe_output}" "${expected}" found_at)
+  if(found_at EQUAL -1)
+    message(FATAL_ERROR
+      "mission-warp metadata lacks '${expected}':\n${mission_warp_probe_output}")
+  endif()
+endforeach()
+
+execute_process(
+  COMMAND "${ALOG2MEDIA}"
+    "${WORK_DIR}/custom-mission/logs/custom.alog"
+    --start 0
+    --duration 1
+    --fps 4
+    --warp 2
+    --size 320x180
+    --output "${WORK_DIR}/explicit-warp.mp4"
+    --force
+  RESULT_VARIABLE explicit_warp_result
+  OUTPUT_VARIABLE explicit_warp_output
+  ERROR_VARIABLE explicit_warp_error)
+if(NOT explicit_warp_result EQUAL 0)
+  message(FATAL_ERROR
+    "explicit-warp render failed:\n${explicit_warp_output}\n${explicit_warp_error}")
+endif()
+string(FIND "${explicit_warp_output}" "(2x warp, explicit)" explicit_warp_at)
+if(explicit_warp_at EQUAL -1)
+  message(FATAL_ERROR
+    "explicit warp did not override the mission:\n${explicit_warp_output}")
+endif()
+
+execute_process(
+  COMMAND "${ALOG2MEDIA}" "${WORK_DIR}/basic.alog"
+    --map "${WORK_DIR}/basic.tif"
+    --view fit
+    --start 0
+    --duration 0.25
+    --fps 4
+    --size 320x180
+    --output "${WORK_DIR}/fallback-warp.mp4"
+    --force
+  RESULT_VARIABLE fallback_warp_result
+  OUTPUT_VARIABLE fallback_warp_output
+  ERROR_VARIABLE fallback_warp_error)
+if(NOT fallback_warp_result EQUAL 0)
+  message(FATAL_ERROR
+    "fallback-warp render failed:\n${fallback_warp_output}\n${fallback_warp_error}")
+endif()
+string(FIND "${fallback_warp_error}"
+  "no valid mission MOOSTimeWarp was available; using 1 log second"
+  fallback_warning_at)
+if(fallback_warning_at EQUAL -1)
+  message(FATAL_ERROR
+    "missing fallback warp warning:\n${fallback_warp_error}")
 endif()
 
 # A custom mission outside the bounded adjacent/parent discovery layout must

@@ -74,6 +74,9 @@ int main(int argc, char* argv[]) {
   require(config.longOrigin() &&
               std::abs(*config.longOrigin() - -71.087448) < 1e-9,
           "LongOrigin is exposed");
+  require(config.moosTimeWarp() &&
+              std::abs(*config.moosTimeWarp() - 7.5) < 1e-9,
+          "MOOSTimeWarp is exposed");
 
   const auto& params = config.params();
   require(params.size() == 5, "all pMarineViewer parameters are loaded");

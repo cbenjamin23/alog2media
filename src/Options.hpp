@@ -38,6 +38,7 @@ struct Options {
   std::optional<double> at;
   double fps = 15.0;
   double warp = 1.0;
+  bool warp_explicit = false;
   int width = 1280;
   int height = 720;
   ViewMode view = ViewMode::mission;

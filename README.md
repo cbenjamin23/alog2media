@@ -94,6 +94,10 @@ Explicit CLI values override logged `REGION_INFO`, which overrides mission
 settings and built-in defaults. An `.alog` cannot reproduce an interactive
 pan, zoom, or visibility change that was never logged.
 
+Video playback defaults to `MOOSTimeWarp` from the discovered mission, matching
+the original launch's wall-clock speed. `--warp FACTOR` overrides it. If no
+valid mission warp is available, alog2media warns and uses `1`.
+
 ## Common options
 
 ```text
@@ -102,7 +106,8 @@ pan, zoom, or visibility change that was never logged.
 --start SECONDS           First log time to render.
 --end SECONDS             Last log time to render.
 --duration SECONDS        Log-time duration after --start.
---warp FACTOR             Log seconds per output second.
+--warp FACTOR             Override log seconds per output second; otherwise
+                          use mission MOOSTimeWarp, or 1 with a warning.
 --fps FPS                 Output rate; default 15.
 --size WIDTHxHEIGHT       Output dimensions; default 1280x720.
 --mission FILE.moos       Override automatic mission discovery.
@@ -132,7 +137,7 @@ Alpha tutorial log at 1280×720:
 
 | Output | Media | Frames | Render time | Throughput |
 | --- | ---: | ---: | ---: | ---: |
-| H.264 MP4, default 1× | 284.47 s | 4,267 | 14.53 s | 294 frames/s |
+| H.264 MP4, `--warp 1` | 284.47 s | 4,267 | 14.53 s | 294 frames/s |
 | H.264 MP4, `--warp 10` | 28.47 s | 427 | 1.61 s | 265 frames/s |
 | Animated GIF excerpt | 10 s | 150 | 6.63 s | 23 frames/s |
 | Lossless PNG | one frame | 1 | 0.23 s | n/a |
@@ -140,6 +145,8 @@ Alpha tutorial log at 1280×720:
 alogview draws the current interactive frame rather than exporting a file, so
 watching the same log takes about 284.45 seconds at 1× or 28.45 seconds at
 10×. The corresponding MP4 exports were about 18–20× faster than playback.
+When a nearby mission declares `MOOSTimeWarp = 10`, the second row is now the
+automatic playback default.
 This compares workflows, not renderer internals: alogview does not encode
 media and may draw fewer frames at the GUI refresh rate.
 

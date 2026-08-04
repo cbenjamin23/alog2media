@@ -82,7 +82,6 @@ ParseResult parseOptions(int argc, char* argv[],
                          const std::filesystem::path& discovery_root) {
   ParseResult result;
   bool fps_set = false;
-  bool warp_set = false;
 
   for(int index = 1; index < argc; ++index) {
     const std::string argument = argv[index];
@@ -153,7 +152,7 @@ ParseResult parseOptions(int argc, char* argv[],
     } else if(isValueOption(argument, "--warp")) {
       result.options.warp = parseNumber(
           optionValue(argument, index, argc, argv, "--warp"), "--warp");
-      warp_set = true;
+      result.options.warp_explicit = true;
     } else if(isValueOption(argument, "--size")) {
       const auto dimensions = parseSize(
           optionValue(argument, index, argc, argv, "--size"));
@@ -258,7 +257,7 @@ ParseResult parseOptions(int argc, char* argv[],
   if(result.options.output_format == OutputFormat::png) {
     if(result.options.start || result.options.end || result.options.duration)
       throw UsageError("PNG snapshots use --at instead of --start, --end, or --duration");
-    if(fps_set || warp_set)
+    if(fps_set || result.options.warp_explicit)
       throw UsageError("PNG snapshots do not use --fps or --warp");
   } else if(result.options.at) {
     throw UsageError("--at requires a .png output file");
@@ -297,7 +296,8 @@ Time:
   --start SECONDS            First log-relative time. Default: log minimum
   --end SECONDS              End of the log-time interval. Default: log maximum
   --duration SECONDS         Log-time duration after --start; conflicts with --end.
-  --warp FACTOR              Log seconds per output second. Default: 1
+  --warp FACTOR              Log seconds per output second. Default: mission
+                             MOOSTimeWarp; otherwise 1 with a warning.
 
 Scene:
   --mission FILE.moos        Override automatic pMarineViewer mission discovery.
