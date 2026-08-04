@@ -199,6 +199,32 @@ def _assert_exact_frames(
     )
 
 
+def _assert_codec_equivalent_frames(
+    left: Path, right: Path, ffmpeg: str, ffprobe: str
+) -> None:
+    """Allow only negligible H.264 decode rounding between equal renders."""
+
+    for frame in ("first", "middle", "last"):
+        difference, _, _ = compare_frames(
+            left,
+            right,
+            left_frame=frame,
+            right_frame=frame,
+            channel_tolerance=2,
+            ffmpeg=ffmpeg,
+            ffprobe=ffprobe,
+        )
+        if difference.changed_pixels or difference.mean_absolute_error > 0.01:
+            raise ContractError(
+                f"decoded {frame} frames are not codec-equivalent for "
+                f"{left.name} and {right.name}: {difference}"
+            )
+    print(
+        f"pixel proof: {left.name} and {right.name} have codec-equivalent "
+        "first/middle/last frames"
+    )
+
+
 def _assert_difference(
     difference: PixelDiff, minimum_pixels: int, description: str
 ) -> None:
@@ -957,7 +983,9 @@ def run_contract(
             frame_count=4,
             duration=1.0,
         )
-    _assert_exact_frames(mission_default, mission_grid_off, ffmpeg, ffprobe)
+    _assert_codec_equivalent_frames(
+        mission_default, mission_grid_off, ffmpeg, ffprobe
+    )
     for candidate, minimum, description in (
         (mission_mapless, 30000, "mission TIFF_FILE_B map versus mapless"),
         (mission_grid_off, 1000, "mission grid auto versus CLI off"),
