@@ -116,8 +116,8 @@ int main() {
           "mission viewport is the default");
   require(defaults.options.map_mode == alog2media::MapMode::automatic,
           "map defaults to automatic discovery");
-  require(defaults.options.grid == alog2media::ToggleMode::automatic,
-          "grid defaults to auto");
+  require(defaults.options.grid == alog2media::ToggleMode::off,
+          "grid defaults to off");
   require(defaults.options.labels == alog2media::ToggleMode::automatic,
           "labels default to auto");
   require(defaults.options.geometry == alog2media::ToggleMode::automatic,

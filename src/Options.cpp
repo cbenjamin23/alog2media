@@ -292,8 +292,8 @@ Scene:
                              mapless local-coordinate scene.
   --view mission|fit         mission uses REGION_INFO pan/zoom (default); fit
                              frames visible scene content.
-  --grid auto|on|off         Follow mission config, force grid on, or force it
-                             off. auto falls back to off.
+  --grid auto|on|off         Coordinate grid. Default: off. auto follows the
+                             mission config; on always shows it.
   --labels auto|on|off       Follow mission config or override all supported
                              scene labels. auto falls back to on.
   --geometry auto|on|off     Follow mission config or override all logged

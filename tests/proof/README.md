@@ -50,8 +50,9 @@ Media checks use FFprobe JSON plus decoded RGB24 frames. They assert:
 - without `REGION_INFO` or `--mission`, the normal
   `mission/XLOG.../LOG....alog` layout discovers its parent
   `targ_shoreside.moos`; its mission-only datum, `TIFF_FILE_B` map, partial
-  zoom-only camera, grid, labels, and trails all affect the render, and their
-  corresponding CLI overrides win independently.
+  zoom-only camera, labels, and trails all affect the render; the grid remains
+  off by default, `--grid auto` imports it, and CLI overrides win
+  independently.
 
 The media helper is also usable on arbitrary outputs:
 

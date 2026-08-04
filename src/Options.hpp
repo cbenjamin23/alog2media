@@ -40,7 +40,7 @@ struct Options {
   int width = 1280;
   int height = 720;
   ViewMode view = ViewMode::mission;
-  ToggleMode grid = ToggleMode::automatic;
+  ToggleMode grid = ToggleMode::off;
   ToggleMode labels = ToggleMode::automatic;
   ToggleMode geometry = ToggleMode::automatic;
   TrailsMode trails = TrailsMode::automatic;

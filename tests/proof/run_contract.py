@@ -764,6 +764,7 @@ def run_contract(
     # With no REGION_INFO, automatically discover parent targ_shoreside.moos.
     # It supplies map, datum, partial camera, and natural visual defaults.
     # Exercise each import and its CLI override.
+    mission_default = output_root / "mission fallback default.mp4"
     mission_auto = output_root / "mission fallback auto.mp4"
     mission_mapless = output_root / "mission fallback mapless.mp4"
     mission_grid_off = output_root / "mission fallback grid off.mp4"
@@ -784,8 +785,19 @@ def run_contract(
         executable,
         paths["mission_alog"],
         None,
+        mission_default,
+        *mission_common,
+        "--view",
+        "mission",
+    )
+    _render(
+        executable,
+        paths["mission_alog"],
+        None,
         mission_auto,
         *mission_common,
+        "--grid",
+        "auto",
         "--view",
         "mission",
     )
@@ -795,6 +807,8 @@ def run_contract(
         None,
         mission_mapless,
         *mission_common,
+        "--grid",
+        "auto",
         "--view",
         "mission",
         "--map",
@@ -808,8 +822,6 @@ def run_contract(
         *mission_common,
         "--view",
         "mission",
-        "--grid",
-        "off",
     )
     _render(
         executable,
@@ -817,6 +829,8 @@ def run_contract(
         None,
         mission_labels_on,
         *mission_common,
+        "--grid",
+        "auto",
         "--view",
         "mission",
         "--labels",
@@ -828,6 +842,8 @@ def run_contract(
         None,
         mission_trails_full,
         *mission_common,
+        "--grid",
+        "auto",
         "--view",
         "mission",
         "--trails",
@@ -839,10 +855,13 @@ def run_contract(
         None,
         mission_fit,
         *mission_common,
+        "--grid",
+        "auto",
         "--view",
         "fit",
     )
     for media in (
+        mission_default,
         mission_auto,
         mission_mapless,
         mission_grid_off,
@@ -860,6 +879,7 @@ def run_contract(
             frame_count=4,
             duration=1.0,
         )
+    _assert_exact_frames(mission_default, mission_grid_off, ffmpeg, ffprobe)
     for candidate, minimum, description in (
         (mission_mapless, 30000, "mission TIFF_FILE_B map versus mapless"),
         (mission_grid_off, 1000, "mission grid auto versus CLI off"),
