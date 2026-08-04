@@ -22,7 +22,6 @@ to 2% of pixels and mean absolute error 2.0; the foreground check separately
 requires at least 600 reference object pixels and limits foreground drift to
 30% of those pixels and mean absolute error 20.0.
 
-The initial reference was generated on macOS Apple Silicon against MOOS-IvP
-`b4a6162b018cde48279659c8b595594990a29086` and visually reviewed on
-2026-07-31. Linux CI independently checks it against the pinned official
-revision recorded in `.github/workflows/ci.yml`.
+The reference was generated on macOS Apple Silicon and visually reviewed.
+macOS and Linux CI check it against the official MOOS-IvP revision pinned in
+`.github/workflows/ci.yml`.

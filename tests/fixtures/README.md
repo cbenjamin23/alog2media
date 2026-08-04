@@ -22,6 +22,8 @@ discovery when the log has no `REGION_INFO`. The proof runner installs them as
 `mission/targ_shoreside.moos` and `mission/XLOG.../LOG....alog`; the mission
 supplies a `TIFF_FILE_B`-only map, datum for a LAT/LON report, partial
 zoom-only camera, and mission-controlled grid, labels, and trails.
+The product contract verifies that the grid remains off by default and that
+`--grid auto` imports this mission setting.
 
 The `fixture_map` test helper generates a deterministic 128×128 TIFF during the
 test. The integration test exposes the same bytes under `.tif` and `.tiff`,

@@ -23,11 +23,6 @@ shipping that executable or opening a pMarineViewer window.
   some component libraries use the GNU LGPL.
 - Copyright and author notices remain in the dependency source files.
 
-The first validated local dependency revision was
-`b4a6162b018cde48279659c8b595594990a29086`. That revision records development
-provenance. The supported `v0.3.0` build and CI baseline is official MOOS-IvP
-commit `174bd7340c33b43e96e1b7eb1ef57aae4df385c9`.
-
 ## FLTK
 
 FLTK supplies the state-holder base class and compatibility OpenGL declarations
