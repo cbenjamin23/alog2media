@@ -188,6 +188,8 @@ jobs:
           ./scripts/build-apt-repo.sh \
             "$RUNNER_TEMP/packages" "$RUNNER_TEMP/site/apt"
           cp packaging/apt/site-index.html "$RUNNER_TEMP/site/index.html"
+          cp packaging/apt/install-apt.sh "$RUNNER_TEMP/site/install-apt.sh"
+          chmod 0755 "$RUNNER_TEMP/site/install-apt.sh"
           gpgv --keyring packaging/apt/alog2media-archive-keyring.gpg \
             "$RUNNER_TEMP/site/apt/dists/jammy/InRelease"
           gpgv --keyring packaging/apt/alog2media-archive-keyring.gpg \

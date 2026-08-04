@@ -28,6 +28,20 @@ brew install cbenjamin23/tap/alog2media
 
 ### APT (Ubuntu 22.04 or 24.04, amd64 or arm64)
 
+For a convenience setup, download the script first so you can inspect it:
+
+```bash
+curl -fsSL https://cbenjamin23.github.io/alog2media/install-apt.sh \
+  -o /tmp/install-alog2media.sh
+less /tmp/install-alog2media.sh
+sudo bash /tmp/install-alog2media.sh
+sudo apt install alog2media
+```
+
+The script only installs the repository key and source-list entry. It does not
+install packages until you run `apt install` explicitly. The fully manual
+equivalent is:
+
 ```bash
 curl -fsSL https://cbenjamin23.github.io/alog2media/apt/alog2media-archive-keyring.gpg \
   | sudo tee /usr/share/keyrings/alog2media-archive-keyring.gpg >/dev/null
